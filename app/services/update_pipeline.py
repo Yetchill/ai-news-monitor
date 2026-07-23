@@ -64,6 +64,8 @@ class UpdatePipeline:
         admission_policy: ContentAdmissionPolicy | None = None,
         verification_service: VerificationService | None = None,
         publication_policy: PublicationPolicy | None = None,
+        initial_fetch_days_provider: Callable[[], int] | None = None,
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._uow_factory = uow_factory
         self._crawl_service = crawl_service
@@ -73,6 +75,8 @@ class UpdatePipeline:
         self._admission_policy = admission_policy or BasicAdmissionPolicy()
         self._verification_service = verification_service or VerificationService()
         self._publication_policy = publication_policy or PublicationPolicy()
+        self._initial_fetch_days_provider = initial_fetch_days_provider or (lambda: 30)
+        self._now = now
 
     async def update(
         self,
@@ -285,28 +289,54 @@ class UpdatePipeline:
         normalized_count = 0
         rejected_count = 0
         failed_count = 0
+        range_skipped_count = 0
         rejection_reasons: Counter[str] = Counter()
         failure_reasons: Counter[str] = Counter()
         phase = "configuration"
         try:
             self._admission_policy.validate_source(source)
             phase = "collection"
-            collected = await self._crawl_service.collect(
+            is_initial_fetch = source.last_success_at is None
+            current_time = _utc_datetime(self._now())
+            effective_published_from = _effective_published_from(
+                source=source,
+                mode=mode,
+                requested=published_from,
+                now=current_time,
+                initial_cutoff=(
+                    current_time - timedelta(days=self._initial_fetch_days_provider())
+                    if is_initial_fetch
+                    else None
+                ),
+            )
+            batch = await self._crawl_service.collect_with_stats(
                 source,
                 mode=mode,
                 max_pages=max_pages,
                 max_items=max_items or source.max_items_per_run,
-                published_from=(
-                    published_from
-                    or (
-                        datetime.now(UTC) - timedelta(days=source.lookback_days)
-                        if mode is UpdateMode.INCREMENTAL and source.lookback_days > 0
-                        else None
-                    )
-                ),
+                published_from=effective_published_from,
                 published_to=published_to,
             )
-            discovered = len(collected)
+            collected = batch.items
+            discovered = batch.total_count
+            range_skipped_count = batch.outside_range_count
+            if range_skipped_count:
+                LOGGER.info(
+                    "Skipped items outside published time range source_id=%s "
+                    "reason=%s count=%s cutoff=%s",
+                    source.id,
+                    (
+                        "initial_fetch.outside_time_range"
+                        if is_initial_fetch
+                        else "update.outside_published_range"
+                    ),
+                    range_skipped_count,
+                    (
+                        effective_published_from.isoformat()
+                        if effective_published_from is not None
+                        else "none"
+                    ),
+                )
             phase = "normalization"
             normalized_items: list[CollectedItem] = []
             keep_query_params = _keep_query_params(source)
@@ -332,7 +362,7 @@ class UpdatePipeline:
                     source_name=source.name,
                     status=SourceUpdateStatus.FAILED,
                     discovered=discovered,
-                    skipped=failed_count,
+                    skipped=failed_count + range_skipped_count,
                     failed=failed_count,
                     failure_reason_counts=dict(failure_reasons),
                     error=error,
@@ -430,7 +460,7 @@ class UpdatePipeline:
                 discovered=discovered,
                 new=stats.new,
                 updated=stats.updated,
-                skipped=stats.skipped,
+                skipped=stats.skipped + range_skipped_count,
                 unclassified=stats.unclassified,
                 normalized=normalized_count,
                 accepted=len(admitted_items),
@@ -453,7 +483,7 @@ class UpdatePipeline:
                 discovered=discovered,
                 normalized=normalized_count,
                 rejected=rejected_count,
-                skipped=failure_reasons["normalization.failed"],
+                skipped=failure_reasons["normalization.failed"] + range_skipped_count,
                 failed=failed_count + 1,
                 rejection_reason_counts=dict(rejection_reasons),
                 failure_reason_counts=dict(failure_reasons),
@@ -473,6 +503,39 @@ class UpdatePipeline:
                 f"Failed to persist failure state for source_id={source_id}",
                 state_error,
             )
+
+
+def _effective_published_from(
+    *,
+    source: Source,
+    mode: UpdateMode,
+    requested: datetime | None,
+    now: datetime,
+    initial_cutoff: datetime | None,
+) -> datetime | None:
+    candidates = [
+        _utc_datetime(value)
+        for value in (
+            requested,
+            initial_cutoff,
+            (
+                now - timedelta(days=source.lookback_days)
+                if initial_cutoff is None
+                and requested is None
+                and mode is UpdateMode.INCREMENTAL
+                and source.lookback_days > 0
+                else None
+            ),
+        )
+        if value is not None
+    ]
+    return max(candidates, default=None)
+
+
+def _utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _log_exception(context: str, error: BaseException) -> None:

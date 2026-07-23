@@ -36,15 +36,27 @@
               <td data-label="来源" class="num">{{ run.source_success }} / {{ run.source_total }}</td><td data-label="抓取" class="num">{{ run.discovered_count }}</td><td data-label="通过准入" class="num">{{ run.accepted_count }}</td><td data-label="拒绝" class="num">{{ run.rejected_count }}</td><td data-label="分类" class="num col-optional">{{ run.classified_count }}</td><td data-label="新增" class="num">{{ run.new_count }}</td><td data-label="更新" class="num col-optional">{{ run.updated_count }}</td><td data-label="重复" class="num col-optional">{{ run.duplicate_count }}</td><td data-label="失败" class="num">{{ run.failed_count }}</td>
             </tr>
             <tr class="tr-expand"><td colspan="13"><div class="expand-grid">
-              <div class="expand-block">
-                <h3>来源明细</h3>
-                {% if run.source_executions %}
-                  <table class="mini-table"><thead><tr><th>来源</th><th>结果</th><th>抓取</th><th>准入</th><th>拒绝</th><th>新增</th><th>备注</th></tr></thead><tbody>{% for source in run.source_executions %}<tr><td><a class="text-link" href="/sources/{{ source.source_id }}">{{ source.source_name }}</a></td><td><span class="status status-{{ 'ok' if source.status == 'success' else 'error' }}">{{ '成功' if source.status == 'success' else '失败' }}</span></td><td class="num">{{ source.discovered }}</td><td class="num">{{ source.accepted }}</td><td class="num">{{ source.rejected }}</td><td class="num">{{ source.new }}</td><td>{{ source.error or '—' }}</td></tr>{% endfor %}</tbody></table>
-                {% else %}<p class="muted">此历史记录没有保存来源级明细。</p>{% endif %}
+              <div class="expand-main">
+                <section class="expand-block expand-sources">
+                  <h3>来源明细</h3>
+                  {% if run.source_executions %}
+                    <div class="mini-table-scroll" tabindex="0" aria-label="来源明细横向滚动区域">
+                      <table class="mini-table"><thead><tr><th>来源</th><th>结果</th><th>抓取</th><th>准入</th><th>拒绝</th><th>新增</th><th>备注</th></tr></thead><tbody>{% for source in run.source_executions %}<tr><td><a class="text-link" href="/sources/{{ source.source_id }}">{{ source.source_name }}</a></td><td><span class="status status-{{ 'ok' if source.status == 'success' else 'error' }}">{{ '成功' if source.status == 'success' else '失败' }}</span></td><td class="num">{{ source.discovered }}</td><td class="num">{{ source.accepted }}</td><td class="num">{{ source.rejected }}</td><td class="num">{{ source.new }}</td><td>{{ source.error or '—' }}</td></tr>{% endfor %}</tbody></table>
+                    </div>
+                  {% else %}<p class="muted">此历史记录没有保存来源级明细。</p>{% endif %}
+                </section>
+                <div class="expand-reasons">
+                  <section class="expand-block">
+                    <h3>未通过准入原因</h3>
+                    {% if run.rejection_reason_counts %}<ul class="reason-list">{% for reason, count in run.rejection_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul>{% else %}<p class="muted">本次没有未通过准入的原因。</p>{% endif %}
+                  </section>
+                  <section class="expand-block">
+                    <h3>处理失败原因</h3>
+                    {% if run.failure_reason_counts %}<ul class="reason-list">{% for reason, count in run.failure_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul>{% else %}<p class="muted">本次没有处理失败原因。</p>{% endif %}
+                  </section>
+                </div>
               </div>
-              {% if run.rejection_reason_counts %}<div class="expand-block"><h3>未通过准入原因</h3><ul class="reason-list">{% for reason, count in run.rejection_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul></div>{% endif %}
-              {% if run.failure_reason_counts %}<div class="expand-block"><h3>处理失败原因</h3><ul class="reason-list">{% for reason, count in run.failure_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul></div>{% endif %}
-              <div class="expand-block"><h3>运行摘要</h3><dl class="kv-list"><div class="kv-row"><dt>耗时</dt><dd>{% if run.duration_seconds is not none %}{{ run.duration_seconds }} 秒{% else %}运行中{% endif %}</dd></div><div class="kv-row"><dt>成功来源</dt><dd>{{ run.source_success }}</dd></div><div class="kv-row"><dt>失败来源</dt><dd>{{ run.source_failed }}</dd></div><div class="kv-row"><dt>规范化</dt><dd>{{ run.normalized_count }}</dd></div><div class="kv-row"><dt>待分类</dt><dd>{{ run.unclassified_count }}</dd></div><div class="kv-row"><dt>跳过</dt><dd>{{ run.skipped_count }}</dd></div></dl>{% if run.error_summary %}<h3 style="margin-top:12px">错误摘要</h3><div class="error-box">{{ run.error_summary }}</div>{% endif %}</div>
+              <aside class="expand-block expand-summary"><h3>运行摘要</h3><dl class="kv-list"><div class="kv-row"><dt>耗时</dt><dd>{% if run.duration_seconds is not none %}{{ run.duration_seconds }} 秒{% else %}运行中{% endif %}</dd></div><div class="kv-row"><dt>成功来源</dt><dd>{{ run.source_success }}</dd></div><div class="kv-row"><dt>失败来源</dt><dd>{{ run.source_failed }}</dd></div><div class="kv-row"><dt>规范化</dt><dd>{{ run.normalized_count }}</dd></div><div class="kv-row"><dt>待分类</dt><dd>{{ run.unclassified_count }}</dd></div><div class="kv-row"><dt>跳过</dt><dd>{{ run.skipped_count }}</dd></div></dl>{% if run.error_summary %}<h3 class="expand-error-title">错误摘要</h3><div class="error-box">{{ run.error_summary }}</div>{% endif %}</aside>
             </div></td></tr>
           {% endfor %}
         </tbody>

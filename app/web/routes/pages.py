@@ -26,6 +26,7 @@ from app.domain.update import UpdateResult
 from app.services.error_sanitization import sanitize_error
 from app.services.schedule_settings_service import (
     ScheduleValidationError,
+    parse_initial_fetch_days,
     parse_time,
     validate_timezone,
 )
@@ -359,6 +360,7 @@ async def save_settings(
     schedule_time: Annotated[str, Form(min_length=5, max_length=5)],
     days: Annotated[list[str], Form()],
     timezone: Annotated[str, Form(min_length=1, max_length=100)],
+    initial_fetch_days: Annotated[str, Form(min_length=1, max_length=3)],
     enabled: Annotated[str | None, Form(max_length=5)] = None,
 ) -> RedirectResponse:
     if enabled not in {None, "true"}:
@@ -370,6 +372,7 @@ async def save_settings(
         minute=minute,
         days=days,
         timezone=timezone,
+        initial_fetch_days=parse_initial_fetch_days(initial_fetch_days),
     )
     try:
         await request.app.state.services.scheduler.reload()

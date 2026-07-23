@@ -32,7 +32,7 @@
 - openpyxl、python-docx；
 - Pydantic Settings 与 YAML 配置。
 
-## 五分钟启动
+## 普通用户安装
 
 安装 [Python 3.12](https://www.python.org/) 和 [uv](https://docs.astral.sh/uv/)，然后执行：
 
@@ -43,7 +43,9 @@ cd ai-intelligence-monitor
 ./scripts/run.sh
 ```
 
-浏览 `http://127.0.0.1:8000/`。Windows PowerShell 使用：
+默认 bootstrap 只安装 Web 服务、数据库、采集、解析和导出所需的运行依赖，不安装
+pytest、Ruff、Pyright、Node.js wheel 或类型存根。浏览 `http://127.0.0.1:8000/`。
+Windows PowerShell 使用：
 
 ```powershell
 git clone <YOUR_REPOSITORY_URL> ai-intelligence-monitor
@@ -52,7 +54,20 @@ Set-Location ai-intelligence-monitor
 ./scripts/run.ps1
 ```
 
-bootstrap 只在数据库不存在时创建 `data/intelligence.db`，不会覆盖已有数据库。启动服务不会自动采集；首次获得资讯需在来源页面显式更新，或运行 `uv run --frozen python -m app.cli update`。该操作会访问来源网站并写入当前数据库。
+bootstrap 只在 `.env` 不存在时从 `.env.example` 创建配置；已有 `.env` 会原样保留。每次运行都会幂等执行数据库迁移和 canonical 来源目录对账，不会删除、清空或重建已有 `data/intelligence.db`。启动服务不会自动采集；首次获得资讯需在来源页面显式更新，或运行 `.venv/bin/python -m app.cli update`。该操作会访问来源网站并写入当前数据库。
+
+## 开发者安装
+
+开发者使用 `--dev` 安装锁文件中的完整开发依赖：
+
+```bash
+./scripts/bootstrap.sh --dev
+./scripts/run.sh
+```
+
+Windows PowerShell 对应使用 `./scripts/bootstrap.ps1 --dev`。
+
+可用 `./scripts/bootstrap.sh --help` 查看参数。普通模式与开发模式都可重复执行；从普通模式切换到开发模式会补齐开发工具，再次执行普通模式会按锁文件移除开发组。
 
 ## 默认规则模式与可选 AI
 
@@ -89,9 +104,9 @@ output/                 导出目录（生成文件被忽略）
 ./scripts/verify.sh
 
 # 或逐项执行
-uv run --frozen python -m pytest -m "not network"
-uv run --frozen ruff check app/ tests/
-uv run --frozen pyright app/ tests/
+.venv/bin/python -m pytest -m "not network"
+.venv/bin/ruff check app/ tests/
+.venv/bin/pyright app/ tests/
 ```
 
 默认测试不访问公网、不调用真实 AI，也不写 `data/intelligence.db`。

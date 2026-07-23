@@ -333,6 +333,10 @@ class ScheduleSettings(Base):
         CheckConstraint("schedule_hour BETWEEN 0 AND 23", name="ck_schedule_hour"),
         CheckConstraint("schedule_minute BETWEEN 0 AND 59", name="ck_schedule_minute"),
         CheckConstraint("schedule_days_mask BETWEEN 1 AND 127", name="ck_schedule_days"),
+        CheckConstraint(
+            "initial_fetch_days BETWEEN 1 AND 365",
+            name="ck_schedule_initial_fetch_days",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
@@ -340,6 +344,7 @@ class ScheduleSettings(Base):
     schedule_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=9)
     schedule_minute: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     schedule_days_mask: Mapped[int] = mapped_column(Integer, nullable=False, default=127)
+    initial_fetch_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     timezone: Mapped[str] = mapped_column(String(100), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now

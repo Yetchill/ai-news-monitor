@@ -14,6 +14,9 @@ from app.domain.scheduling import ScheduleSettingsValue
 from app.storage.repositories import RepositoryUnitOfWork
 
 _WEEKDAYS = tuple(Weekday)
+DEFAULT_INITIAL_FETCH_DAYS = 30
+MIN_INITIAL_FETCH_DAYS = 1
+MAX_INITIAL_FETCH_DAYS = 365
 
 
 class ScheduleValidationError(ValueError):
@@ -46,10 +49,13 @@ class ScheduleSettingsService:
         minute: int,
         days: Iterable[Weekday | str],
         timezone: str,
+        initial_fetch_days: int | None = None,
     ) -> ScheduleSettingsValue:
         parsed_days = parse_weekdays(days)
         validate_time(hour, minute)
         validate_timezone(timezone)
+        if initial_fetch_days is not None:
+            validate_initial_fetch_days(initial_fetch_days)
         with self._write_lock, self._uow_factory() as uow:
             row = uow.schedule_settings.add_singleton_if_missing(
                 ScheduleSettings(
@@ -58,6 +64,11 @@ class ScheduleSettingsService:
                     schedule_hour=hour,
                     schedule_minute=minute,
                     schedule_days_mask=weekdays_to_mask(parsed_days),
+                    initial_fetch_days=(
+                        initial_fetch_days
+                        if initial_fetch_days is not None
+                        else DEFAULT_INITIAL_FETCH_DAYS
+                    ),
                     timezone=timezone,
                     updated_at=_aware_utc(self._now()),
                 )
@@ -66,6 +77,8 @@ class ScheduleSettingsService:
             row.schedule_hour = hour
             row.schedule_minute = minute
             row.schedule_days_mask = weekdays_to_mask(parsed_days)
+            if initial_fetch_days is not None:
+                row.initial_fetch_days = initial_fetch_days
             row.timezone = timezone
             row.updated_at = _aware_utc(self._now())
             return _to_value(row)
@@ -125,6 +138,23 @@ def validate_time(hour: int, minute: int) -> None:
         or not 0 <= minute <= 59
     ):
         raise ScheduleValidationError("执行时间无效, 小时应为 0-23, 分钟应为 0-59。")
+
+
+def parse_initial_fetch_days(value: str) -> int:
+    if not value or not value.isascii() or not value.isdecimal():
+        raise ScheduleValidationError("首次抓取时间范围必须是 1-365 的整数。")
+    parsed = int(value)
+    validate_initial_fetch_days(parsed)
+    return parsed
+
+
+def validate_initial_fetch_days(value: object) -> None:
+    if (
+        isinstance(value, bool)
+        or type(value) is not int
+        or not MIN_INITIAL_FETCH_DAYS <= value <= MAX_INITIAL_FETCH_DAYS
+    ):
+        raise ScheduleValidationError("首次抓取时间范围必须是 1-365 的整数。")
 
 
 def parse_weekdays(values: Iterable[Weekday | str]) -> tuple[Weekday, ...]:
@@ -198,6 +228,7 @@ def _to_value(row: ScheduleSettings) -> ScheduleSettingsValue:
         hour=row.schedule_hour,
         minute=row.schedule_minute,
         days=mask_to_weekdays(row.schedule_days_mask),
+        initial_fetch_days=row.initial_fetch_days,
         timezone=row.timezone,
         updated_at=_database_utc(row.updated_at),
         last_scheduled_trigger_at=(
@@ -212,6 +243,7 @@ def _default_value() -> ScheduleSettingsValue:
         hour=9,
         minute=0,
         days=tuple(Weekday),
+        initial_fetch_days=DEFAULT_INITIAL_FETCH_DAYS,
         timezone=system_timezone_name(),
         updated_at=None,
         last_scheduled_trigger_at=None,

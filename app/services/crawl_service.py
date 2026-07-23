@@ -1,6 +1,7 @@
 """Network collection coordination without database transaction ownership."""
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -9,6 +10,13 @@ from app.domain.collection import CollectContext, CollectedItem, Fetcher
 from app.domain.enums import SourceOrigin, SourceType
 from app.domain.models import Source
 from app.domain.update import UpdateMode
+
+
+@dataclass(frozen=True, slots=True)
+class CollectionBatch:
+    items: list[CollectedItem]
+    total_count: int
+    outside_range_count: int
 
 
 class CrawlService:
@@ -35,6 +43,26 @@ class CrawlService:
         published_from: datetime | None = None,
         published_to: datetime | None = None,
     ) -> list[CollectedItem]:
+        batch = await self.collect_with_stats(
+            source,
+            mode=mode,
+            max_pages=max_pages,
+            max_items=max_items,
+            published_from=published_from,
+            published_to=published_to,
+        )
+        return batch.items
+
+    async def collect_with_stats(
+        self,
+        source: Source,
+        *,
+        mode: UpdateMode = UpdateMode.INCREMENTAL,
+        max_pages: int | None = None,
+        max_items: int | None = None,
+        published_from: datetime | None = None,
+        published_to: datetime | None = None,
+    ) -> CollectionBatch:
         config = _runtime_config(
             source,
             mode=mode,
@@ -59,8 +87,13 @@ class CrawlService:
         start = _utc(published_from)
         end = _utc(published_to)
         if start is None and end is None:
-            return items
-        return [item for item in items if _within_range(item.published_at, start, end)]
+            return CollectionBatch(items=items, total_count=len(items), outside_range_count=0)
+        filtered = [item for item in items if _within_range(item.published_at, start, end)]
+        return CollectionBatch(
+            items=filtered,
+            total_count=len(items),
+            outside_range_count=len(items) - len(filtered),
+        )
 
 
 def _runtime_config(
