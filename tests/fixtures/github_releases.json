@@ -1,0 +1,43 @@
+[
+  {
+    "name": "Malformed release link",
+    "tag_name": "broken",
+    "html_url": "https://[malformed",
+    "published_at": "not-a-date",
+    "body": "This entry must not stop later releases.",
+    "draft": false,
+    "prerelease": false,
+    "assets": []
+  },
+  {
+    "name": "Qwen-Agent v0.1.0",
+    "tag_name": "v0.1.0",
+    "html_url": "https://github.com/QwenLM/Qwen-Agent/releases/tag/v0.1.0",
+    "published_at": "2026-07-10T12:30:00Z",
+    "created_at": "2026-07-10T11:00:00Z",
+    "body": "## Highlights\n\nAdded [tool support](https://example.com/docs) and fixes.",
+    "draft": false,
+    "prerelease": false,
+    "assets": [{"browser_download_url": "https://example.com/archive.zip"}]
+  },
+  {
+    "name": "Qwen-Agent beta",
+    "tag_name": "v0.2.0-beta",
+    "html_url": "https://github.com/QwenLM/Qwen-Agent/releases/tag/v0.2.0-beta",
+    "published_at": "2026-07-11T12:30:00Z",
+    "body": "Beta build",
+    "draft": false,
+    "prerelease": true,
+    "assets": []
+  },
+  {
+    "name": "Unpublished draft",
+    "tag_name": "draft",
+    "html_url": "https://github.com/QwenLM/Qwen-Agent/releases/tag/draft",
+    "published_at": null,
+    "body": "Draft",
+    "draft": true,
+    "prerelease": false,
+    "assets": []
+  }
+]

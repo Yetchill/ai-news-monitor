@@ -1,0 +1,47 @@
+<nav class="pagination" aria-label="分页">
+  <span style="font-size:var(--fs-small);color:var(--text-2);margin-right:var(--sp-4)">第 {{ page.page }} / {{ page.total_pages }} 页 · 共 {{ page.total }} 条</span>
+
+  {% if previous_url %}
+    <a class="btn btn-secondary btn-sm" href="{{ previous_url }}">上一页</a>
+  {% else %}
+    <button class="btn btn-secondary btn-sm" type="button" disabled>上一页</button>
+  {% endif %}
+
+  {% set total_pages = page.total_pages %}
+  {% set current_page = page.page %}
+  {% set max_display = 7 %}
+
+  {% if total_pages <= max_display %}
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == current_page %}
+        <span class="page-num is-current">{{ p }}</span>
+      {% else %}
+        <a class="page-num" href="{{ request.url.include_query_params(page=p) }}">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    {% set start_page = [1, current_page - 2]|max %}
+    {% set end_page = [total_pages, current_page + 2]|min %}
+    {% if start_page > 1 %}
+      <a class="page-num" href="{{ request.url.include_query_params(page=1) }}">1</a>
+      {% if start_page > 2 %}<span class="page-ellipsis">…</span>{% endif %}
+    {% endif %}
+    {% for p in range(start_page, end_page + 1) %}
+      {% if p == current_page %}
+        <span class="page-num is-current">{{ p }}</span>
+      {% else %}
+        <a class="page-num" href="{{ request.url.include_query_params(page=p) }}">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if end_page < total_pages %}
+      {% if end_page < total_pages - 1 %}<span class="page-ellipsis">…</span>{% endif %}
+      <a class="page-num" href="{{ request.url.include_query_params(page=total_pages) }}">{{ total_pages }}</a>
+    {% endif %}
+  {% endif %}
+
+  {% if next_url %}
+    <a class="btn btn-secondary btn-sm" href="{{ next_url }}">下一页</a>
+  {% else %}
+    <button class="btn btn-secondary btn-sm" type="button" disabled>下一页</button>
+  {% endif %}
+</nav>

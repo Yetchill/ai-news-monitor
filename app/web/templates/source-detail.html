@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ source.name }} · 来源 · AI 行业情报{% endblock %}
+{% block content %}
+  <a class="back-link" href="/sources">‹ 返回来源列表</a>
+
+  <div class="page-head">
+    <div class="page-head-text">
+      <div class="detail-title-row">
+        <h1>{{ source.name }}</h1>
+        {% set life_state = source.lifecycle_state.value %}
+        {% set status_kind = 'ok' if life_state == 'active' else ('muted' if life_state == 'paused' else ('warn' if life_state == 'candidate' else 'error')) %}
+        <span class="status status-{{ status_kind }}">{{ '正常' if life_state == 'active' else ('已停用' if life_state == 'paused' else ('候选' if life_state == 'candidate' else '异常')) }}</span>
+        {% if source.enabled %}
+          <span class="status status-info">已启用</span>
+        {% else %}
+          <span class="status status-muted">已停用</span>
+        {% endif %}
+      </div>
+      {% if source.start_url %}
+        <p><a class="text-link" href="{{ source.start_url }}" target="_blank" rel="noopener noreferrer">{{ source.start_url }}</a></p>
+      {% endif %}
+    </div>
+    <div class="page-head-side page-head-actions">
+      {% if life_state == 'candidate' %}
+        <form action="/sources/{{ source.id }}/preview" method="post" style="display:contents"><button class="btn btn-secondary" type="submit">预览来源</button></form>
+        <form action="/sources/{{ source.id }}/activate" method="post" style="display:contents"><input type="hidden" name="confirm" value="true"><button class="btn btn-primary" type="submit" data-act="activate-candidate">启用并加入监控</button></form>
+      {% else %}
+        <form action="/sources/{{ source.id }}/enabled" method="post" style="display:contents">
+          <input type="hidden" name="enabled" value="{{ 'false' if source.enabled else 'true' }}">
+          <input type="hidden" name="return_to" value="{{ return_to }}">
+          <button class="btn btn-secondary" type="submit">{{ '停用来源' if source.enabled else '启用来源' }}</button>
+        </form>
+        <form action="/sources/{{ source.id }}/updates" method="post" data-update-form style="display:contents">
+          <button class="btn btn-primary" type="submit" data-processing-text="正在更新…" {% if not source.enabled %}disabled{% endif %}>更新此来源</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if saved %}<div class="notice is-success">来源已保存。</div>{% endif %}
+  {% if updated %}<div class="notice is-success">来源设置已更新。</div>{% endif %}
+
+  <section class="section-card">
+    <div class="facts-grid">
+      <div class="fact"><div class="fact-label">来源类型</div><div class="fact-value">{{ discovery_type_label(source.source_type) }}</div></div>
+      <div class="fact"><div class="fact-label">采集方式</div><div class="fact-value">{{ crawl_mode_label(source.crawl_mode) }}</div></div>
+      <div class="fact"><div class="fact-label">来源角色</div><div class="fact-value">{{ source_role_label(source.source_role) }}</div></div>
+      <div class="fact"><div class="fact-label">审核策略</div><div class="fact-value">{{ review_policy_label(source.review_policy) }}</div></div>
+      <div class="fact"><div class="fact-label">最近检查</div><div class="fact-value">{{ format_time(source.last_checked_at) }}</div></div>
+      <div class="fact"><div class="fact-label">最近结果</div><div class="fact-value">
+        {% if source.last_success_at %}<span class="status status-ok">成功</span>{% elif source.last_checked_at %}<span class="status status-warn">部分</span>{% else %}<span class="status status-muted">—</span>{% endif %}
+      </div></div>
+    </div>
+  </section>
+
+  <div class="stats-strip" aria-label="来源近 30 天统计">
+    <div class="stat"><span class="stat-num">{{ period_stats.discovered }}</span><span class="stat-label">抓取</span></div>
+    <div class="stat"><span class="stat-num stat-unread">{{ period_stats.accepted }}</span><span class="stat-label">通过准入</span></div>
+    <div class="stat"><span class="stat-num stat-warn">{{ period_stats.rejected }}</span><span class="stat-label">未通过准入</span></div>
+    <div class="stat"><span class="stat-num">{{ period_stats.new }}</span><span class="stat-label">新增</span></div>
+    <div class="stat"><span class="stat-num">{{ period_stats.updated }}</span><span class="stat-label">更新</span></div>
+    <div class="stat"><span class="stat-num stat-danger">{{ period_stats.failed }}</span><span class="stat-label">失败</span></div>
+  </div>
+
+  {% if source.last_error %}
+    <div class="notice is-error">最近错误：{{ source.last_error }}</div>
+  {% endif %}
+
+  <div class="settings-layout">
+    <section class="section-card">
+      <div class="section-head">
+        <h2>基本信息</h2>
+        <p>名称、默认分类与说明可编辑；入口网址与采集配置不可在线修改。</p>
+      </div>
+      <form class="form-stack" action="/sources/{{ source.id }}/edit" method="post">
+        <div class="field">
+          <label>来源名称</label>
+          <input name="name" required maxlength="255" value="{{ source.name }}">
+        </div>
+        <div class="field">
+          <label>默认分类</label>
+          <select name="default_category">
+            <option value="">自动判断</option>
+            {% for category in categories %}
+              <option value="{{ category.value }}" {% if source.default_category == category %}selected{% endif %}>{{ category_label(category) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>来源说明</label>
+          <textarea name="description" rows="3" maxlength="2000">{{ source.description or '' }}</textarea>
+        </div>
+        <label class="switch-row">
+          <span class="switch">
+            <input type="checkbox" name="enabled" value="true" {% if source.enabled %}checked{% endif %}>
+            <span class="switch-track"></span>
+          </span>
+          <span class="switch-text"><b>参与批量更新</b><small>停用后不再自动抓取，历史资讯保留</small></span>
+        </label>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">保存修改</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <h2>重新检测来源</h2>
+        <p>生成独立预览，确认前不会覆盖现有配置。</p>
+      </div>
+      <form action="/sources/{{ source.id }}/rediscover" method="post" data-update-form>
+        <button class="btn btn-secondary" type="submit" data-processing-text="正在重新检测…" {% if not source.start_url %}disabled{% endif %}>重新检测来源</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="section-card">
+    <div class="section-head"><h2>最近运行</h2><p>此来源最近的抓取结果与错误摘要。</p></div>
+    {% if recent_runs %}
+      <div class="table-wrap"><table class="mini-table"><thead><tr><th>时间</th><th>触发方式</th><th>结果</th><th>抓取</th><th>准入 / 拒绝</th><th>新增</th><th>备注</th></tr></thead><tbody>
+        {% for run in recent_runs %}
+          <tr><td><a class="text-link" href="/runs#run-{{ run.run_id }}">{{ format_time(run.started_at) }}</a></td><td>{{ trigger_label(run.trigger) }}</td><td><span class="status status-{{ 'ok' if run.source_status == 'success' else 'error' }}">{{ '成功' if run.source_status == 'success' else '失败' }}</span></td><td class="num">{{ run.discovered }}</td><td class="num">{{ run.accepted }} / {{ run.rejected }}</td><td class="num">{{ run.new }}</td><td>{{ run.error or '—' }}</td></tr>
+        {% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <div class="empty-state"><h2>暂无运行记录</h2><p>此来源完成更新后，运行结果会显示在这里。</p></div>
+    {% endif %}
+  </section>
+
+  <section class="section-card">
+    <div class="section-head"><h2>最近抓取的资讯</h2><p>按发布时间、发现时间和更新时间综合排序。</p></div>
+    {% if recent_items %}
+      <div class="table-wrap"><table class="mini-table"><thead><tr><th>资讯</th><th>分类</th><th>发现时间</th></tr></thead><tbody>
+        {% for item in recent_items %}
+          <tr><td>{% if item.original_url %}<a class="text-link" href="{{ item.original_url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}</td><td>{{ category_label(item.category) }}</td><td>{{ format_time(item.discovered_at) }}</td></tr>
+        {% endfor %}
+      </tbody></table></div>
+      <div class="page-actions"><a class="text-link" href="/?source_id={{ source.id }}">查看该来源全部资讯 →</a></div>
+    {% else %}
+      <div class="empty-state"><h2>暂无抓取资讯</h2><p>此来源尚未保存任何资讯。</p></div>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,309 @@
+{
+  "code": 0,
+  "data": [
+    {
+      "aid": "382227",
+      "aidint": 382227,
+      "article_cover": "https://static001.infoq.cn/resource/image/36/79/36152cf21ecf73e9ca6abd6b4df6f279.jpg",
+      "article_cover_point": "{\"big\":{\"point\":{\"x\":0,\"y\":244,\"w\":3871,\"h\":2178}},\"small\":{\"point\":{\"x\":0,\"y\":233,\"w\":3871,\"h\":2178}},\"width\":3872,\"height\":2592}",
+      "article_sharetitle": "GMI Cloud  “无界造物节”在WAIC圆满完赛，“MaaS+创意”赋能 AI 创作新生态！",
+      "article_subtitle": "",
+      "article_summary": "经历为期多日的角逐， “无界造物节 Buildless Limits”（下文称“本活动”）决赛在 WAIC 2026 GMI Cloud 展位正式落地并圆满收官，来自全国的优秀开发者、AI 创作者齐聚展会现场，通过线下路演、作品展示、现场评审的方式，完成双赛道终极对决，各赛道前三甲荣誉重磅揭晓。",
+      "article_title": "GMI Cloud  “无界造物节”在WAIC圆满完赛，“MaaS+创意”赋能 AI 创作新生态！",
+      "author": [
+        {
+          "uid": 1359415,
+          "nickname": "赵钰莹",
+          "avatar": "https://static001.geekbang.org/account/avatar/00/14/be/37/f89c376b.jpg",
+          "active": 1,
+          "is_early": 1,
+          "ucode": "A54F7A131D29F6",
+          "uri": "/profile/A54F7A131D29F6/",
+          "author_type": 3,
+          "vip": 0
+        }
+      ],
+      "comment_count": 0,
+      "comment_user": 0,
+      "ctime": 1784602723931,
+      "duration": "",
+      "is_collect": false,
+      "is_promotion": false,
+      "label": [],
+      "no_author": "",
+      "publish_time": 1784602722695,
+      "score": 1784602722695,
+      "share_pic": "",
+      "source": 1,
+      "speaker_introduce": "",
+      "speaker_title": "",
+      "sub_type": 0,
+      "topic": [
+        {
+          "id": 31,
+          "name": "AI&大模型",
+          "alias": "AI&LLM",
+          "type": 0
+        }
+      ],
+      "type": 1,
+      "utime": 1784602723931,
+      "uuid": "xfQ6bClXS02hYhOOqfr4",
+      "views": 3
+    },
+    {
+      "aid": "382162",
+      "aidint": 382162,
+      "article_cover": "https://static001.infoq.cn/resource/image/ec/6d/eccf260b9e0089a5dc758fc83de10f6d.png",
+      "article_cover_point": "{\"big\":{\"point\":{\"x\":0,\"y\":0,\"w\":1907,\"h\":1073}},\"small\":{\"point\":{\"x\":0,\"y\":0,\"w\":1919,\"h\":1080}},\"width\":1920,\"height\":1080}",
+      "article_sharetitle": "神州数码发布企业AI流程系统与智算产品，尝试打通应用和算力两端",
+      "article_subtitle": "",
+      "article_summary": "不少企业已经部署大模型和AI工具，但仍面临知识分散、流程割裂、输出难以溯源，以及专家经验难以沉淀等问题。",
+      "article_title": "神州数码发布企业AI流程系统与智算产品，尝试打通应用和算力两端",
+      "author": [
+        {
+          "uid": 1721802,
+          "nickname": "李冬梅",
+          "avatar": "https://static001.geekbang.org/account/avatar/00/1a/45/ca/5410a746.jpg",
+          "active": 1,
+          "is_early": 0,
+          "ucode": "AFAE0EFC25C22B",
+          "uri": "/profile/AFAE0EFC25C22B/",
+          "author_type": 3,
+          "vip": 0
+        }
+      ],
+      "comment_count": 0,
+      "comment_user": 0,
+      "ctime": 1784548761437,
+      "duration": "",
+      "is_collect": false,
+      "is_promotion": false,
+      "label": [],
+      "no_author": "",
+      "publish_time": 1784548760798,
+      "score": 1784548760950,
+      "share_pic": "",
+      "source": 1,
+      "speaker_introduce": "",
+      "speaker_title": "",
+      "sub_type": 0,
+      "topic": [
+        {
+          "id": 1187,
+          "name": "芯片&算力",
+          "alias": "",
+          "type": 0
+        }
+      ],
+      "type": 1,
+      "utime": 1784548782493,
+      "uuid": "jc1vll7xctqYlopcwIKe",
+      "views": 3144
+    },
+    {
+      "aid": "382161",
+      "aidint": 382161,
+      "article_cover": "https://static001.infoq.cn/resource/image/73/8c/73346e1750a8bc96e902def3c76aaa8c.jpg",
+      "article_cover_point": "{\"big\":{\"point\":{\"x\":0,\"y\":40,\"w\":1280,\"h\":720}},\"small\":{\"point\":{\"x\":0,\"y\":16,\"w\":1280,\"h\":720}},\"width\":1280,\"height\":912}",
+      "article_sharetitle": "国产GPU分水岭时刻：当别家还在卷参数，摩尔线程早已训练出了世界模型",
+      "article_subtitle": "",
+      "article_summary": "国产GPU正从参数竞争转向AI生产系统构建",
+      "article_title": "国产GPU分水岭时刻：当别家还在卷参数，摩尔线程早已训练出了世界模型",
+      "author": [
+        {
+          "uid": 1667452,
+          "nickname": "褚杏娟",
+          "avatar": "https://static001.geekbang.org/account/avatar/00/19/71/7c/ffd94344.jpg",
+          "active": 1,
+          "is_early": 0,
+          "ucode": "F13709F72C8E46",
+          "uri": "/profile/F13709F72C8E46/",
+          "author_type": 3,
+          "vip": 0
+        }
+      ],
+      "comment_count": 0,
+      "comment_user": 0,
+      "ctime": 1784548291207,
+      "duration": "",
+      "is_collect": false,
+      "is_promotion": false,
+      "label": [],
+      "no_author": "",
+      "publish_time": 1784548290438,
+      "score": 1784548290210,
+      "share_pic": "",
+      "source": 1,
+      "speaker_introduce": "",
+      "speaker_title": "",
+      "sub_type": 0,
+      "topic": [
+        {
+          "id": 1187,
+          "name": "芯片&算力",
+          "alias": "",
+          "type": 0
+        }
+      ],
+      "type": 1,
+      "utime": 1784548445275,
+      "uuid": "01aguG1Yrgxl0bpmfZps",
+      "views": 3116
+    },
+    {
+      "aid": "382113",
+      "aidint": 382113,
+      "article_cover": "https://static001.infoq.cn/resource/image/79/66/79537ceeecaefyye1707b218ddd5aa66.jpg",
+      "article_cover_point": "{\"big\":{\"point\":{\"x\":0,\"y\":0,\"w\":1608,\"h\":904}},\"small\":{\"point\":{\"x\":0,\"y\":0,\"w\":1608,\"h\":904}},\"width\":1608,\"height\":1000}",
+      "article_sharetitle": "无问芯穹夏立雪：数字世界与物理世界的所有AI生产力运行，都需要 Agentic Infra",
+      "article_subtitle": "",
+      "article_summary": "“计算需求在指数级攀升，今天，仅依靠产能的线性增长去堆叠算力，已经远远无法弥合供需之间持续扩大的缺口。”",
+      "article_title": "无问芯穹夏立雪：数字世界与物理世界的所有AI生产力运行，都需要 Agentic Infra",
+      "author": [
+        {
+          "uid": 4548616,
+          "nickname": "无问芯穹",
+          "avatar": "",
+          "active": 1,
+          "is_early": 0,
+          "ucode": "5496E037124E20",
+          "uri": "/profile/5496E037124E20/",
+          "author_type": 0,
+          "vip": 0
+        }
+      ],
+      "comment_count": 0,
+      "comment_user": 0,
+      "ctime": 1784536883398,
+      "duration": "",
+      "is_collect": false,
+      "is_promotion": false,
+      "label": [],
+      "no_author": "",
+      "publish_time": 1784536881798,
+      "score": 1784536882223,
+      "share_pic": "",
+      "source": 1,
+      "speaker_introduce": "",
+      "speaker_title": "",
+      "sub_type": 4,
+      "topic": [
+        {
+          "id": 147,
+          "name": "企业动态",
+          "alias": " industrynews",
+          "type": 0
+        },
+        {
+          "id": 1187,
+          "name": "芯片&算力",
+          "alias": "",
+          "type": 0
+        }
+      ],
+      "type": 1,
+      "utime": 1784537037528,
+      "uuid": "AWhEVVgvNquuiKZdRQ0H",
+      "views": 3409
+    },
+    {
+      "aid": "382070",
+      "aidint": 382070,
+      "article_cover": "https://static001.infoq.cn/resource/image/11/ac/11b6de565c5082e008acc628c0a7f4ac.png",
+      "article_cover_point": "{\"big\":{\"point\":{\"x\":0,\"y\":0,\"w\":1919,\"h\":1080}},\"small\":{\"point\":{\"x\":0,\"y\":0,\"w\":1919,\"h\":1080}},\"width\":1920,\"height\":1080}",
+      "article_sharetitle": "专访孙元浩：乘坐星环号，把数据库“移民火星”的人",
+      "article_subtitle": "",
+      "article_summary": "“把数据库迁到 GPU，就像移民到火星。”",
+      "article_title": "专访孙元浩：乘坐星环号，把数据库“移民火星”的人",
+      "author": [
+        {
+          "uid": 4288251,
+          "nickname": "王玮",
+          "avatar": "https://static001.geekbang.org/account/avatar/00/41/6e/fb/6373f5b2.jpg",
+          "active": 1,
+          "is_early": 0,
+          "ucode": "C5C45E256D9526",
+          "uri": "/profile/C5C45E256D9526/",
+          "author_type": 0,
+          "vip": 0
+        }
+      ],
+      "comment_count": 0,
+      "comment_user": 0,
+      "ctime": 1784531226863,
+      "duration": "",
+      "is_collect": false,
+      "is_promotion": false,
+      "label": [],
+      "no_author": "",
+      "publish_time": 1784531226123,
+      "score": 1784531226862,
+      "share_pic": "",
+      "source": 1,
+      "speaker_introduce": "",
+      "speaker_title": "",
+      "sub_type": 0,
+      "topic": [
+        {
+          "id": 15,
+          "name": "大数据",
+          "alias": "bigdata",
+          "type": 0
+        },
+        {
+          "id": 31,
+          "name": "AI&大模型",
+          "alias": "AI&LLM",
+          "type": 0
+        }
+      ],
+      "type": 1,
+      "utime": 1784531336905,
+      "uuid": "xsZUSSR8PRtcjZobwkYA",
+      "views": 3419
+    },
+    {
+      "aid": "382071",
+      "aidint": 382071,
+      "article_cover": "https://static001.infoq.cn/resource/image/2e/ae/2eda8e9f2fabcc3c32421b45a93aa3ae.jpeg",
+      "article_cover_point": "{\"big\":{\"point\":{\"x\":0,\"y\":0,\"w\":1266,\"h\":712}},\"small\":{\"point\":{\"x\":0,\"y\":0,\"w\":1266,\"h\":712}},\"width\":1267,\"height\":713}",
+      "article_sharetitle": "WAICA正式启航：打破全球AI学术版图，上海迎来关键拼图",
+      "article_subtitle": "——首届世界人工智能大会·学术（WAICA 2026）正式发布",
+      "article_summary": "",
+      "article_title": "WAICA正式启航：打破全球AI学术版图，上海迎来关键拼图",
+      "comment_count": 0,
+      "comment_user": 0,
+      "ctime": 1784531058783,
+      "duration": "",
+      "is_collect": false,
+      "is_promotion": false,
+      "label": [],
+      "no_author": "作者：WAIC 世界人工智能大会",
+      "publish_time": 1784531057717,
+      "score": 1784531058043,
+      "share_pic": "",
+      "source": 1,
+      "speaker_introduce": "",
+      "speaker_title": "",
+      "sub_type": 0,
+      "topic": [
+        {
+          "id": 31,
+          "name": "AI&大模型",
+          "alias": "AI&LLM",
+          "type": 0
+        }
+      ],
+      "type": 1,
+      "utime": 1784531328825,
+      "uuid": "sHqj6EHMWML2TQi3uTdj",
+      "views": 306
+    }
+  ],
+  "error": {},
+  "extra": {
+    "cost": 0.091073449,
+    "request-id": "500c49487be35e955a88c0b90e5290b1@2@infoq"
+  }
+}

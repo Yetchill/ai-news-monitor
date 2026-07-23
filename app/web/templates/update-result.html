@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}更新完成 · AI 行业情报{% endblock %}
+{% block content %}
+  {% set status_kind = 'ok' if result.status.value == 'success' else ('warn' if result.status.value == 'partial_success' else ('error' if result.status.value == 'failed' else 'info')) %}
+  <div class="page-head">
+    <div class="page-head-text"><p class="eyebrow">更新完成</p><div class="detail-title-row"><h1>运行 #{{ result.crawl_run_id }}</h1><span class="status status-{{ status_kind }}">{{ status_label(result.status) }}</span></div><p>本次任务已结束，全部结果和诊断信息已写入本地运行记录。</p></div>
+    <div class="page-head-side page-head-actions"><a class="btn btn-secondary" href="/">返回资讯</a><a class="btn btn-primary" href="/runs#run-{{ result.crawl_run_id }}">查看更新记录</a></div>
+  </div>
+
+  <section class="section-card update-summary-card">
+    <div class="section-head"><h2>更新结果摘要</h2><p>来源执行、内容处理与保存结果。</p></div>
+    <div class="stats-strip" aria-label="来源执行摘要">
+      <div class="stat"><span class="stat-num">{{ result.source_total }}</span><span class="stat-label">来源总数</span></div><div class="stat"><span class="stat-num stat-unread">{{ result.source_success }}</span><span class="stat-label">成功来源</span></div><div class="stat"><span class="stat-num stat-danger">{{ result.source_failed }}</span><span class="stat-label">失败来源</span></div><div class="stat"><span class="stat-num">{{ result.discovered_count }}</span><span class="stat-label">发现</span></div><div class="stat"><span class="stat-num">{{ result.new_count }}</span><span class="stat-label">新增</span></div>
+    </div>
+    <div class="stats-strip stats-strip-secondary" aria-label="内容处理摘要">
+      <div class="stat"><span class="stat-num">{{ result.normalized_count }}</span><span class="stat-label">规范化</span></div><div class="stat"><span class="stat-num stat-unread">{{ result.accepted_count }}</span><span class="stat-label">通过准入</span></div><div class="stat"><span class="stat-num stat-warn">{{ result.rejected_count }}</span><span class="stat-label">未通过准入</span></div><div class="stat"><span class="stat-num">{{ result.classified_count }}</span><span class="stat-label">已分类</span></div><div class="stat"><span class="stat-num stat-warn">{{ result.unclassified_count }}</span><span class="stat-label">待分类</span></div><div class="stat"><span class="stat-num">{{ result.updated_count }}</span><span class="stat-label">更新</span></div><div class="stat"><span class="stat-num">{{ result.duplicate_count }}</span><span class="stat-label">重复</span></div><div class="stat"><span class="stat-num stat-danger">{{ result.failed_count }}</span><span class="stat-label">处理失败</span></div>
+    </div>
+  </section>
+
+  {% if result.source_total == 0 %}<div class="notice">没有选择到可更新的来源。请先到来源页检查来源是否已启用。</div>{% endif %}
+  {% if error_summary %}<div class="notice is-error"><strong>运行错误摘要</strong><p>{{ error_summary }}</p></div>{% endif %}
+
+  {% if result.rejection_reason_counts or result.failure_reason_counts %}
+    <section class="section-card"><div class="section-head"><h2>诊断原因汇总</h2><p>保留本次运行记录的全部拒绝与失败原因。</p></div><div class="expand-grid">
+      <div class="expand-block"><h3>未通过准入原因</h3>{% if result.rejection_reason_counts %}<ul class="reason-list">{% for reason, count in result.rejection_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul>{% else %}<p class="muted">无</p>{% endif %}</div>
+      <div class="expand-block"><h3>处理失败原因</h3>{% if result.failure_reason_counts %}<ul class="reason-list">{% for reason, count in result.failure_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul>{% else %}<p class="muted">无</p>{% endif %}</div>
+    </div></section>
+  {% endif %}
+
+  <section class="section-card">
+    <div class="section-head"><h2>来源明细</h2><p>每个来源在抓取、准入、分类与保存阶段的完整结果。</p></div>
+    {% if result.source_results %}
+      <div class="table-wrap"><table class="data-table table-cards update-result-table"><thead><tr><th>来源</th><th>状态</th><th>发现</th><th>规范化</th><th>通过准入</th><th>拒绝</th><th>分类</th><th>新增</th><th>更新</th><th>重复</th><th>失败</th><th>主要原因与错误</th></tr></thead><tbody>
+        {% for source in result.source_results %}
+          <tr><td data-label="来源" class="cell-block"><div class="cell-main">{{ source.source_name }}</div><div class="cell-sub">来源 #{{ source.source_id }}</div></td><td data-label="状态"><span class="status status-{{ 'ok' if source.status.value == 'success' else 'error' }}">{{ '成功' if source.status.value == 'success' else '失败' }}</span></td><td data-label="发现" class="num">{{ source.discovered }}</td><td data-label="规范化" class="num">{{ source.normalized }}</td><td data-label="通过准入" class="num">{{ source.accepted }}</td><td data-label="拒绝" class="num">{{ source.rejected }}</td><td data-label="分类" class="num">{{ source.classified }}</td><td data-label="新增" class="num">{{ source.new }}</td><td data-label="更新" class="num">{{ source.updated }}</td><td data-label="重复" class="num">{{ source.duplicate }}</td><td data-label="失败" class="num">{{ source.failed }}</td><td data-label="主要原因与错误" class="error-cell">{% if source.failure_reason_counts %}<strong>处理失败：</strong>{% for reason, count in source.failure_reason_counts.items() %}{{ process_reason_label(reason) }}（{{ count }}）{% if not loop.last %}；{% endif %}{% endfor %}{% elif source.rejection_reason_counts %}<strong>未通过准入：</strong>{% for reason, count in source.rejection_reason_counts.items() %}{{ process_reason_label(reason) }}（{{ count }}）{% if not loop.last %}；{% endif %}{% endfor %}{% else %}—{% endif %}{% if sanitized_source_errors.get(source.source_id) %}<div class="cell-sub">{{ sanitized_source_errors[source.source_id] }}</div>{% endif %}</td></tr>
+        {% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <div class="empty-state"><h2>没有来源明细</h2><p>本次运行未选择来源，或该历史任务没有保存来源级记录。</p></div>
+    {% endif %}
+  </section>
+
+  <div class="page-actions"><a class="btn btn-secondary" href="/">返回资讯</a><a class="btn btn-primary" href="/runs#run-{{ result.crawl_run_id }}">查看更新记录</a></div>
+{% endblock %}

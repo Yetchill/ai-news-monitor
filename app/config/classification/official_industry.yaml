@@ -1,0 +1,31 @@
+version: v2
+role: official_industry
+rules:
+  - id: official_industry.policy_standard
+    priority: 100
+    primary_type: policy_standard
+    subject_terms: [人工智能, 大模型, 智能体, 高质量数据集, 算力, 数据要素, 标准, 治理]
+    action_terms: [政策, 发布, 印发, 标准, 征求意见, 管理办法, 规范]
+    exclude_terms: [培训, 调研, 座谈会, 领导活动]
+    topic_tags: []
+  - id: official_industry.application_opportunity
+    priority: 95
+    primary_type: application_opportunity
+    subject_terms: [人工智能, 大模型, 智能体, 数据, 算力, 案例, 项目]
+    action_terms: [征集, 申报, 报名, 参评, 试点]
+    exclude_terms: [结果公布, 入选名单]
+    topic_tags: []
+  - id: official_industry.award_result
+    priority: 90
+    primary_type: award_result
+    subject_terms: [人工智能, 大模型, 智能体, 案例, 项目]
+    action_terms: [获奖, 入选, 名单, 公示, 榜单]
+    exclude_terms: [征集, 申报]
+    topic_tags: [award]
+  - id: official_industry.report_release
+    priority: 85
+    primary_type: report_release
+    subject_terms: [白皮书, 研究报告, 行业报告, 案例集, 蓝皮书, 指南]
+    action_terms: [发布, 印发, 公布]
+    exclude_terms: []
+    topic_tags: []

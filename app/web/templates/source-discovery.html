@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}检测结果 · AI 行业情报{% endblock %}
+{% block content %}
+  <div class="page-head"><div class="page-head-text"><p class="eyebrow">检测结果</p><h1>{{ discovery_type_label(session.discovery.source_type) }}</h1><p>{{ session.discovery.normalized_url }}</p></div><div class="page-head-side"><span class="status status-{{ 'ok' if session.can_enable else 'warn' }}">置信度 {{ (session.discovery.discovery_confidence * 100)|round|int }}%</span></div></div>
+  <section class="section-card onboarding-result">
+    <div class="facts-grid"><div><span>检测状态</span><strong>{{ discovery_status_label(session.discovery.discovery_status) }}</strong></div><div><span>实际类型</span><strong>{{ discovery_type_label(session.discovery.source_type) }}</strong></div><div><span>人工检查</span><strong>{{ '建议人工检查' if session.discovery.discovery_confidence < 0.9 or not session.can_enable else '基础检查即可' }}</strong></div><div><span>自定义采集器</span><strong>{{ '需要' if session.discovery.requires_custom_collector else '不需要' }}</strong></div></div>
+    {% for explanation in session.discovery.explanations %}<p>{{ explanation }}</p>{% endfor %}
+    {% for error in session.preview.errors %}<div class="notice{% if not session.preview.items %} is-error{% endif %}">{{ error }}</div>{% endfor %}
+  </section>
+  <h2>抓取预览（最多 10 条）</h2>
+  {% if session.preview.items %}
+    <div class="item-list">
+      {% for item in session.preview.items %}
+        <article class="item-card"><div class="item-topline"><span class="category-chip">{{ category_label(item.category) }}</span><span class="muted">{{ format_time(item.published_at) }}</span></div><h2 class="item-title"><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></h2>{% if item.summary %}<p class="item-summary">{{ item.summary }}</p>{% endif %}</article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <section class="empty-state"><h2>没有有效预览</h2><p>这不表示来源已经可用；只能保存为停用的待处理来源。</p></section>
+  {% endif %}
+  {% if session.rediscover_source_id %}
+    <section class="section-card"><h2>确认重新检测</h2><p>确认前原配置没有变化。{% if session.can_enable %}确认后才会替换系统检测得到的采集配置。{% else %}当前结果不可用，确认只记录检测状态，原采集配置保持不变。{% endif %}</p><form action="/sources/{{ session.rediscover_source_id }}/rediscover/confirm" method="post"><input type="hidden" name="token" value="{{ token }}"><div class="page-actions"><a class="btn btn-secondary" href="/sources/{{ session.rediscover_source_id }}">保留原配置</a><button class="btn btn-primary" type="submit">确认检测结果</button></div></form></section>
+  {% else %}
+    <form class="section-card form-stack" action="/sources" method="post">
+      <input type="hidden" name="token" value="{{ token }}">
+      <label>来源名称<input name="name" required maxlength="255" value="{{ suggested_name }}"></label>
+      <label>默认分类<select name="default_category"><option value="">自动判断</option>{% for category in categories %}<option value="{{ category.value }}">{{ category_label(category) }}</option>{% endfor %}</select></label>
+      <label>来源说明<textarea name="description" maxlength="2000" rows="4" placeholder="说明关注范围或维护备注"></textarea></label>
+      {% if session.can_enable %}<label class="check-label"><input type="checkbox" name="enabled" value="true" checked>保存后启用</label>{% else %}<div class="notice is-error">当前结果不能启用；将保存为停用的待处理来源。</div>{% endif %}
+      <div class="page-actions"><a class="btn btn-secondary" href="/sources/new">重新输入</a><button class="btn btn-primary" type="submit" name="action" value="save">保存来源</button>{% if session.can_enable %}<button class="btn btn-secondary" type="submit" name="action" value="save_and_update">保存并立即更新</button>{% endif %}</div>
+    </form>
+  {% endif %}
+{% endblock %}

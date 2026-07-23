@@ -1,0 +1,92 @@
+{
+  "success": true,
+  "request_id": "d5ae1635-7fb1-41f8-920b-8cd515a8989c",
+  "data": {
+    "articles": [
+      {
+        "id": "7db4321b-5fb6-4730-83fe-fdc4dfd9f988",
+        "type": "qwen_ai",
+        "title": "Qwen DeepResearch: 当灵感不再需要理由",
+        "content": "<!doctype html>\n<html lang=zh dir=auto>\n\n<head>\n    <meta charset=utf-8>\n    <meta http-equiv=X-UA-Compatible content=\"IE=edge\">\n    <meta name=viewport content=\"width=device-width,initial-scale=1,shrink-to-fit=no\">\n    <meta name=robots content=\"index, follow\">\n    <title>Qwen DeepResearch: 当灵感不再需要理由 | Qwen</title>\n    <meta name=keywords content=\"Release\">\n    <meta name=description content=\"QWEN CHAT 点我体验最新 Qwen DeepResearch\n    灵感是如何死掉的？\n    它通常不是死于“不够好”，而是死于“太麻烦”。\n    当一个念头闪现时，它还是脆弱的、未经证实的。...",
+        "path": "qwen-deepresearch",
+        "language": "zh-CN",
+        "extra": {
+          "git_url": "https://code.alibaba-inc.com/DamoAGI/qwen-blog/blob/qwen_ai/content/blog/qwen-deepresearch/index.md",
+          "description": "",
+          "introduction": "点我体验最新 Qwen DeepResearch _灵感是如何死掉的？_ 它通常不是死于“不够好”，而是死于“太麻烦”。 当一个念头闪现时，它还是脆弱的、未经证实的。我们的大脑在短暂兴奋后，会立刻开始评估“成本”： “我需要花多少小时去查资料来验证它？” “网上的信息质量参差不齐，我该从哪开始，又该信谁？”",
+          "tags": [
+            "Release"
+          ],
+          "cover_small": "https://img.alicdn.com/imgextra/i3/O1CN01DvbmDu1DeQYSDv1qm_!!6000000000241-2-tps-1890-1134.png",
+          "date": "2025-11-13T04:59:26+08:00",
+          "author": "QwenTeam",
+          "readTime": 6,
+          "wordCount": 1236
+        }
+      },
+      {
+        "id": "da6997e4-8105-435a-82a0-6373936ea306",
+        "type": "qwen_ai",
+        "title": "SAPO：一种稳定且高性能的大语言模型强化学习方法",
+        "content": "<!doctype html><html lang=zh dir=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content=\"IE=edge\"><meta name=viewport content=\"width=device-width,initial-scale=1,shrink-to-fit=no\"><meta name=robots content=\"index, follow\"><title>SAPO：一种稳定且高性能的大语言模型强化学习方法 | Qwen</title>\n<meta name=keywords content=\"Research\"><meta name=description content=\"Paper 引言 强化学习（Reinforcement Learning, RL）已经成为提升大语言模型（Large Language Models, LLM）推理能力的核心技术之一。现代 RL 训练流程使模型能够解决困难的数学问题、编写复杂代码和进行多模态推理。实践中，一种被广泛采...",
+        "path": "sapo",
+        "language": "zh-CN",
+        "extra": {
+          "git_url": "https://code.alibaba-inc.com/DamoAGI/qwen-blog/blob/qwen_ai/content/blog/sapo/index.md",
+          "description": "",
+          "introduction": "强化学习（Reinforcement Learning, RL）已经成为提升大语言模型（Large Language Models, LLM）推理能力的核心技术之一。现代 RL 训练流程使模型能够解决困难的数学问题、编写复杂代码和进行多模态推理。实践中，一种被广泛采用的方法是基于组的策略优化（group‑based policy optimization）：对每个提示采样多个回复，并在组内进行奖励归一化。",
+          "tags": [
+            "Research"
+          ],
+          "cover_small": "https://img.alicdn.com/imgextra/i4/O1CN018ECcH61qkAXZSFBFU_!!6000000005533-2-tps-1890-1134.png",
+          "date": "2025-12-05T04:00:00+08:00",
+          "author": "QwenTeam",
+          "readTime": 11,
+          "wordCount": 2183
+        }
+      },
+      {
+        "id": "3860c7e5-c816-4448-8704-3ab23a500dd2",
+        "type": "qwen_ai",
+        "title": "Qwen-Image-Edit-2511: 一致性再提升",
+        "content": "<!doctype html><html lang=zh dir=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content=\"IE=edge\"><meta name=viewport content=\"width=device-width,initial-scale=1,shrink-to-fit=no\"><meta name=robots content=\"index, follow\"><title>Qwen-Image-Edit-2511: 一致性再提升 | Qwen</title>\n<meta name=keywords content><meta name=description content=\"QWEN CHAT GITHUB HUGGING FACE MODELSCOPE DISCORD\n我们很高兴推出 Qwen-Image-Edit-2511，相比于Qwen-Image-Edit-2509，进行了包括一致性提升在内的多项增强。如需体验最新模型，欢迎访问 Qwen Chat 并选择“图像...",
+        "path": "qwen-image-edit-2511",
+        "language": "zh-CN",
+        "extra": {
+          "git_url": "https://code.alibaba-inc.com/DamoAGI/qwen-blog/tree/qwen_ai/content/blog/qwen-image-edit-2511",
+          "description": "",
+          "introduction": "我们很高兴推出 Qwen-Image-Edit-2511，相比于Qwen-Image-Edit-2509，进行了包括一致性提升在内的多项增强。如需体验最新模型，欢迎访问  Qwen Chat 并选择“图像编辑”功能。注意，线上版本有一定优化加速，如果要获取模型最佳效果，可以去 ModelScope 本地部署以获取最佳性能。Qwen-Image-Edit-2511 的主要特性包括：",
+          "tags": [
+            "Open-Source"
+          ],
+          "cover_small": "https://img.alicdn.com/imgextra/i1/O1CN015JyH0e1jXcNfdFALl_!!6000000004558-0-tps-1590-954.jpg",
+          "date": "2025-12-23T13:08:30+08:00",
+          "author": "QwenTeam",
+          "readTime": 4,
+          "wordCount": 801
+        }
+      },
+      {
+        "id": "e07b81f9-017d-4959-8c60-04ed24df26fc",
+        "type": "qwen_ai",
+        "title": "Qwen-Image-Layered: 面向内在可编辑性的图层分解",
+        "content": "<!doctype html><html lang=zh dir=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content=\"IE=edge\"><meta name=viewport content=\"width=device-width,initial-scale=1,shrink-to-fit=no\"><meta name=robots content=\"index, follow\"><title>Qwen-Image-Layered: 面向内在可编辑性的图层分解 | Qwen</title>\n<meta name=keywords content=\"Research\"><meta name=description content=\"QWEN CHAT GITHUB HUGGING FACE MODELSCOPE DEMO\n今天我们很高兴推出 Qwen-Image-Layered，这是一款能够将图像分解为多个 RGBA 图层的模型。这种分层表示赋予了图像内在的可编辑性：每个图层都可以独立操作，而不...",
+        "path": "qwen-image-layered",
+        "language": "zh-CN",
+        "extra": {
+          "git_url": "https://code.alibaba-inc.com/DamoAGI/qwen-blog/blob/qwen_ai/content/blog/qwen-image-layered/index.md",
+          "description": "",
+          "introduction": "今天我们很高兴推出 Qwen-Image-Layered，这是一款能够将图像分解为多个 RGBA 图层的模型。这种分层表示赋予了图像内在的可编辑性：每个图层都可以独立操作，而不会影响其他内容。同时，这种分层结构天然支持高保真的基本编辑操作，例如缩放、移动和重新着色。通过将不同元素物理地隔离到不同的图层中，我们的方法实现了高保真的编辑效果。",
+          "tags": [
+            "Research"
+          ],
+          "cover_small": "https://img.alicdn.com/imgextra/i2/O1CN01y9LKxE248WbyrZzFw_!!6000000007346-0-tps-1590-954.jpg",
+          "date": "2025-12-19T13:08:30+08:00",
+          "author": "QwenTeam",
+          "readTime": 3,
+          "wordCount": 511
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+version: v2
+role: official_product
+rules:
+  - id: official_product.product_update
+    priority: 100
+    primary_type: product_update
+    subject_terms: [模型, 大模型, 智能体, Agent, 平台, API, SDK, 文心, 千帆, DeepSeek, Kimi, 混元, 方舟]
+    action_terms: [正式发布, 发布, 上线, 升级, 更新, 开源, 退役, 下线, 停止服务]
+    exclude_terms: [拟发布, 预计发布, 或将发布, 峰会演讲, 亮相, 参展, 战略签约, 招聘, 教程, 优惠]
+    topic_tags: []
+  - id: official_product.report_release
+    priority: 90
+    primary_type: report_release
+    subject_terms: [白皮书, 研究报告, 行业报告, 蓝皮书, 指南]
+    action_terms: [发布, 正式发布]
+    exclude_terms: []
+    topic_tags: []
+  - id: official_product.award_result
+    priority: 80
+    primary_type: award_result
+    subject_terms: [获奖, 入选, 名单, 榜单]
+    action_terms: [公布, 发布, 公示, 获得, 荣获, 入选]
+    exclude_terms: [征集, 申报, 报名]
+    topic_tags: [award]

@@ -1,0 +1,10 @@
+version: v2
+role: media_discovery
+rules:
+  - id: media_discovery.industry_signal
+    priority: 100
+    primary_type: industry_signal
+    subject_terms: []
+    action_terms: []
+    exclude_terms: []
+    topic_tags: []

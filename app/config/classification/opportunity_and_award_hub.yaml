@@ -1,0 +1,31 @@
+version: v2
+role: opportunity_and_award_hub
+rules:
+  - id: opportunity_hub.application_opportunity
+    priority: 100
+    primary_type: application_opportunity
+    subject_terms: []
+    action_terms: [征集, 申报, 报名, 参评, 成果征集, 案例征集, 项目申报, 试点申报, 比赛报名, 奖项报名, 参评通知, 征集通知, 申报通知, 开始申报]
+    exclude_terms: [征集结果, 获奖结果, 入选名单, 公示名单]
+    topic_tags: []
+  - id: opportunity_hub.award_result
+    priority: 95
+    primary_type: award_result
+    subject_terms: []
+    action_terms: [获奖结果, 入选名单, 公示名单, 典型案例名单, 示范项目名单, 榜单结果, 征集结果]
+    exclude_terms: [开始征集, 开始申报]
+    topic_tags: [award]
+  - id: opportunity_hub.policy_standard
+    priority: 80
+    primary_type: policy_standard
+    subject_terms: [政策, 标准, 管理办法, 规范, 征求意见]
+    action_terms: [发布, 印发, 公布, 征求意见]
+    exclude_terms: []
+    topic_tags: [policy]
+  - id: opportunity_hub.report_release
+    priority: 70
+    primary_type: report_release
+    subject_terms: [白皮书, 研究报告, 行业报告, 案例集, 指南]
+    action_terms: [发布, 公布]
+    exclude_terms: []
+    topic_tags: []

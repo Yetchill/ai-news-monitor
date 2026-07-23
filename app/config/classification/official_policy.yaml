@@ -1,0 +1,24 @@
+version: v2
+role: official_policy
+rules:
+  - id: official_policy.policy_standard
+    priority: 100
+    primary_type: policy_standard
+    subject_terms: [政策, 法规, 法律, 管理办法, 规定, 标准, 规范, 征求意见, 政策解读, 治理]
+    action_terms: [发布, 印发, 公布, 实施, 施行, 征求意见, 解读, 立项]
+    exclude_terms: [培训, 调研, 座谈会, 领导活动]
+    topic_tags: [policy]
+  - id: official_policy.application_opportunity
+    priority: 90
+    primary_type: application_opportunity
+    subject_terms: []
+    action_terms: [征集, 申报, 报名, 参评, 试点申报]
+    exclude_terms: [结果公布, 入选名单]
+    topic_tags: []
+  - id: official_policy.report_release
+    priority: 80
+    primary_type: report_release
+    subject_terms: [白皮书, 报告, 蓝皮书, 指南]
+    action_terms: [发布, 印发, 公布]
+    exclude_terms: []
+    topic_tags: []

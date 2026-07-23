@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>资讯 - 量子位</title>
+    <link>https://www.qbitai.com</link>
+    <item>
+      <title>国产大模型发布重要能力升级</title>
+      <link>https://www.qbitai.com/2026/07/310001.html</link>
+      <pubDate>Mon, 20 Jul 2026 05:35:45 +0000</pubDate>
+      <description><![CDATA[模型与智能体能力同步更新。]]></description>
+    </item>
+    <item>
+      <title>Agent 平台开放全新 API</title>
+      <link>https://www.qbitai.com/2026/07/310002.html</link>
+      <pubDate>Sun, 19 Jul 2026 08:00:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>重复转载条目</title>
+      <link>https://www.qbitai.com/2026/07/310002.html</link>
+      <pubDate>Sun, 19 Jul 2026 08:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

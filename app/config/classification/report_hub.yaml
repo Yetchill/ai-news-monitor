@@ -1,0 +1,17 @@
+version: v2
+role: report_hub
+rules:
+  - id: report_hub.report_release
+    priority: 100
+    primary_type: report_release
+    subject_terms: [白皮书, 研究报告, 行业报告, 专题报告, 案例集, 蓝皮书, 指南, 研究成果]
+    action_terms: [发布, 正式发布, 公布, 下载]
+    exclude_terms: [会议议程, 培训]
+    topic_tags: []
+  - id: report_hub.case_analysis
+    priority: 80
+    primary_type: case_analysis
+    subject_terms: [案例, 实践, 应用场景]
+    action_terms: [成效, 效果, 提升, 降低, 节省]
+    exclude_terms: [案例集发布, 入选名单]
+    topic_tags: [case, industry_application]

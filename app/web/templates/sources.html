@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}来源 · AI 行业情报{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div class="page-head-text">
+      <h1>来源</h1>
+      <p>查看当前监控的网站及其运行状况，或添加新的资讯来源。</p>
+    </div>
+    <div class="page-head-side page-head-actions">
+      <form action="/sources/seed-formal" method="post" style="display:contents">
+        <button class="btn btn-secondary" type="submit">同步来源目录</button>
+      </form>
+      <a class="btn btn-primary" href="/sources/new">添加来源</a>
+    </div>
+  </div>
+
+  <div class="stats-strip" aria-label="来源概览">
+    <div class="stat"><span class="stat-num">{{ source_overview.total }}</span><span class="stat-label">来源总数</span></div>
+    <div class="stat"><span class="stat-num stat-unread">{{ source_overview.active }}</span><span class="stat-label">已启用</span></div>
+    <div class="stat"><span class="stat-num stat-warn">{{ source_overview.attention }}</span><span class="stat-label">需要关注</span></div>
+    <div class="stat"><span class="stat-num">{{ source_overview.candidate }}</span><span class="stat-label">候选</span></div>
+  </div>
+
+  {% if seeded %}<div class="notice is-success">来源目录同步完成：新建 {{ seed_created }}，更新 {{ seed_promoted }}，冲突 {{ seed_conflicts }}。显式同步会按 canonical 目录恢复 active / candidate 状态，并安全处理历史来源。</div>{% endif %}
+
+  {% if formal_source_count < 26 %}
+    <div class="notice" style="margin-bottom:var(--sp-4)">
+      <strong>当前数据库只有 {{ formal_source_count }} / 26 个目录来源。</strong>
+      <p style="margin-top:4px">可在此安全、幂等同步完整目录；候选来源也会写入数据库。</p>
+      <form action="/sources/seed-formal" method="post"><button class="btn btn-primary btn-sm" type="submit">同步完整来源目录</button></form>
+    </div>
+  {% endif %}
+
+  <div class="tabs-bar">
+    <div class="tabs" role="tablist" aria-label="来源分组">
+      <a class="tab{% if filters.tab == 'active' %} is-active{% endif %}" role="tab" aria-selected="{{ 'true' if filters.tab == 'active' else 'false' }}" href="/sources?tab=active">监控中 <span class="tab-count">{{ source_overview.total - source_overview.candidate }}</span></a>
+      <a class="tab{% if filters.tab == 'candidate' %} is-active{% endif %}" role="tab" aria-selected="{{ 'true' if filters.tab == 'candidate' else 'false' }}" href="/sources?tab=candidate">候选 <span class="tab-count">{{ source_overview.candidate }}</span></a>
+    </div>
+  </div>
+
+  {% if filters.tab == 'candidate' %}
+    <div class="notice">
+      候选来源已完成安全检测，尚未加入监控。建议先预览并确认抓取内容符合预期，再启用并加入监控。
+    </div>
+  {% endif %}
+
+  <form class="filter-panel" method="get" action="/sources">
+    <input type="hidden" name="tab" value="{{ filters.tab }}">
+    <div class="filter-main">
+      <div class="field field-search">
+        <label for="sf-keyword">搜索来源</label>
+        <input id="sf-keyword" type="search" name="search" maxlength="200" placeholder="输入名称或域名" value="{{ filters.search or '' }}">
+      </div>
+      {% if filters.tab == 'active' %}
+        <div class="field">
+          <label for="sf-filter">目录筛选</label>
+          <select id="sf-filter" name="filter">
+            {% for value, label in (("all","全部"),("active","已启用"),("paused","已暂停"),("official","官方来源"),("media","媒体发现"),("blocked","网页访问受限"),("needs_custom","需要专用采集器")) %}
+              <option value="{{ value }}" {% if catalog_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      <div class="field field-narrow">
+        <label for="sf-per-page">每页</label>
+        <select id="sf-per-page" name="per_page">
+          {% for size in (20, 50, 100) %}<option value="{{ size }}" {% if page.per_page == size %}selected{% endif %}>{{ size }} 条</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" type="submit">筛选</button>
+        <a class="btn btn-secondary" href="/sources?tab={{ filters.tab }}">清除</a>
+      </div>
+    </div>
+  </form>
+
+  {% if page.entries %}
+    <div class="table-wrap">
+      <table class="data-table table-cards">
+        {% if filters.tab == 'candidate' %}
+          <thead><tr><th>来源</th><th>类型</th><th>检测结果</th><th>最近预览</th><th>预览数量</th><th>操作</th></tr></thead>
+          <tbody>
+            {% for source in page.entries %}
+              <tr data-source="{{ source.id }}" data-slug="{{ source.slug or '' }}">
+                <td data-label="来源" class="cell-block"><div class="cell-main">{{ source.name }}</div><div class="cell-sub">{% if source.start_url %}<a class="text-link" href="{{ source.start_url }}" target="_blank" rel="noopener noreferrer">{{ source.start_url|truncate(56) }}</a>{% else %}网址不可用{% endif %}</div></td>
+                <td data-label="类型" class="cell-block"><div>{{ source_role_label(source.source_role) }}</div><div class="cell-sub">{{ crawl_mode_label(source.crawl_mode) }}</div></td>
+                <td data-label="检测结果"><span class="status status-warn">{{ discovery_status_label(source.discovery_status) }}</span>{% if source.implementation_reason %}<div class="cell-sub">{{ source.implementation_reason|truncate(80) }}</div>{% endif %}</td>
+                <td data-label="最近预览" class="cell-time">{{ format_time(source.last_preview_at) }}</td>
+                <td data-label="预览数量" class="num">{{ source.preview_item_count if source.preview_item_count is not none else '—' }}</td>
+                <td data-label="操作"><div class="row-ops"><a class="op" href="/sources/{{ source.id }}">详情</a><form action="/sources/{{ source.id }}/preview" method="post" style="display:contents"><button class="op" type="submit">预览</button></form><form action="/sources/{{ source.id }}/activate" method="post" style="display:contents"><input type="hidden" name="confirm" value="true"><button class="op" type="submit" data-act="activate-candidate">启用并加入监控</button></form></div></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        {% else %}
+          <thead><tr><th>来源</th><th>类型</th><th>运行状态</th><th>启用</th><th>最近更新</th><th>最近结果</th><th>操作</th></tr></thead>
+          <tbody>
+            {% for source in page.entries %}
+              {% set running = source.lifecycle_state.value == 'active' and source.enabled %}
+              <tr data-source="{{ source.id }}" data-slug="{{ source.slug or '' }}">
+                <td data-label="来源" class="cell-block"><div class="cell-main">{{ source.name }}</div><div class="cell-sub">{% if source.start_url %}<a class="text-link" href="{{ source.start_url }}" target="_blank" rel="noopener noreferrer">{{ source.start_url|truncate(56) }}</a>{% else %}网址不可用{% endif %}</div></td>
+                <td data-label="类型" class="cell-block"><div>{{ source_role_label(source.source_role) }}</div><div class="cell-sub">{{ crawl_mode_label(source.crawl_mode) }}</div></td>
+                <td data-label="运行状态">{% if not running %}<span class="status status-muted">已停用</span>{% elif source.last_error %}<span class="status status-warn">最近失败</span><br><button class="err-toggle" type="button" data-act="toggle-source-err">查看错误</button>{% else %}<span class="status status-ok">正常</span>{% endif %}</td>
+                <td data-label="启用"><form action="/sources/{{ source.id }}/enabled" method="post" style="display:contents"><input type="hidden" name="enabled" value="{{ 'false' if running else 'true' }}"><input type="hidden" name="return_to" value="{{ return_to }}"><label class="switch" style="display:inline-flex"><input type="checkbox" {% if running %}checked{% endif %} onchange="this.form.submit()" aria-label="启用或停用"><span class="switch-track"></span></label></form></td>
+                <td data-label="最近更新" class="cell-time">{{ format_time(source.last_checked_at) }}</td>
+                <td data-label="最近结果">{% if source.last_error %}<span class="status status-error">失败</span>{% elif source.last_success_at %}<span class="status status-ok">成功</span>{% else %}<span class="status status-muted">暂无运行</span>{% endif %}</td>
+                <td data-label="操作"><div class="row-ops"><a class="op" href="/sources/{{ source.id }}">详情</a>{% if running %}<form action="/sources/{{ source.id }}/updates" method="post" data-update-form style="display:contents"><button class="op" type="submit" data-processing-text="更新中…">更新</button></form>{% endif %}</div></td>
+              </tr>
+              {% if source.last_error %}<tr class="tr-expand"><td colspan="7"><div class="error-box">最近错误：{{ source.last_error }}</div></td></tr>{% endif %}
+            {% endfor %}
+          </tbody>
+        {% endif %}
+      </table>
+    </div>
+  {% else %}
+    <section class="empty-state">
+      <h2>{{ '暂无候选来源' if filters.tab == 'candidate' else '没有符合条件的来源' }}</h2>
+      <p>{{ '可前往添加来源页面检测新网站。' if filters.tab == 'candidate' else '请调整搜索或筛选条件，也可以添加新的来源。' }}</p>
+      <a class="btn btn-primary" href="/sources/new">添加来源</a>
+    </section>
+  {% endif %}
+
+  {% include "pagination.html" %}
+{% endblock %}

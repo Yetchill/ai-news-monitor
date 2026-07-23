@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}设置 · AI 行业情报{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div class="page-head-text">
+      <h1>设置</h1>
+      <p>配置定时自动更新。AI 模型与自动化设置请前往「AI」页面。</p>
+    </div>
+  </div>
+
+  {% if saved %}<div class="notice is-success">设置已保存并立即生效。</div>{% endif %}
+  {% if timezone_error %}<div class="notice is-error">当前时区不可用，请填写有效的 IANA 时区并保存。</div>{% endif %}
+
+  <div class="settings-layout">
+    <section class="section-card">
+      <div class="section-head">
+        <h2>定时更新</h2>
+        <p>按计划自动更新全部已启用来源，无需手动操作。</p>
+      </div>
+      <form class="form-stack" method="post" action="/settings">
+        <label class="switch-row">
+          <span class="switch">
+            <input type="checkbox" id="setting-enabled" name="enabled" value="true" {% if view.settings.enabled %}checked{% endif %}>
+            <span class="switch-track"></span>
+          </span>
+          <span class="switch-text"><b>开启定时更新</b><small>关闭后仅能通过手动方式更新来源</small></span>
+        </label>
+        <div class="form-grid" id="schedule-fields">
+          <div class="field">
+            <label for="setting-time">每天执行时间</label>
+            <input type="time" id="setting-time" name="schedule_time" value="{{ '%02d:%02d'|format(view.settings.hour, view.settings.minute) }}" required>
+          </div>
+          <div class="field">
+            <label for="setting-tz">时区</label>
+            <input type="text" id="setting-tz" name="timezone" value="{{ view.settings.timezone }}" maxlength="100" required placeholder="Asia/Shanghai">
+          </div>
+          <div class="field form-grid-wide">
+            <label>执行星期</label>
+            <div class="weekday-chips" id="weekday-chips">
+              {% for day in weekdays %}
+                <label class="weekday-chip">
+                  <input type="checkbox" name="days" value="{{ day.value }}" {% if day in view.settings.days %}checked{% endif %}>
+                  <span>{{ weekday_label(day) }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="settings-save" type="submit">保存设置</button>
+        </div>
+      </form>
+    </section>
+
+    <div class="settings-side">
+      <section class="section-card">
+        <div class="section-head">
+          <h2>当前状态</h2>
+        </div>
+        <dl class="kv-list">
+          <div class="kv-row"><dt>调度状态</dt><dd><span class="status {% if view.status.value == 'waiting' %}status-ok{% elif view.status.value == 'running' %}status-info{% else %}status-muted{% endif %}" id="scheduler-status">{{ scheduler_status_label(view.status) }}</span></dd></div>
+          <div class="kv-row"><dt>下一次计划运行</dt><dd id="scheduler-next">{% if next_run_local %}{{ format_time(next_run_local) }}（{{ display_timezone }}）{% elif view.settings.enabled %}等待调度器计算{% else %}已关闭{% endif %}</dd></div>
+          <div class="kv-row"><dt>最近一次计划触发</dt><dd>{% if last_trigger_local %}{{ format_time(last_trigger_local) }}（{{ display_timezone }}）{% else %}暂无{% endif %}</dd></div>
+          <div class="kv-row"><dt>最近修改</dt><dd>{{ format_time(view.settings.updated_at) }}</dd></div>
+        </dl>
+      </section>
+      <section class="section-card">
+        <div class="section-head">
+          <h2>运行说明</h2>
+        </div>
+        <ul class="note-list">
+          <li>应用必须保持运行，定时更新才会执行；关机或退出期间错过的任务不会补跑。</li>
+          <li>手动更新与定时更新互斥：已有更新运行时，计划触发会安全跳过。</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+{% endblock %}

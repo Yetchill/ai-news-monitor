@@ -1,0 +1,24 @@
+version: v2
+role: official_case_hub
+rules:
+  - id: official_case_hub.award_result
+    priority: 100
+    primary_type: award_result
+    subject_terms: [案例, 项目, 单位]
+    action_terms: [获奖, 入选, 名单, 公示, 榜单]
+    exclude_terms: [征集, 申报]
+    topic_tags: [award, case]
+  - id: official_case_hub.case_analysis
+    priority: 90
+    primary_type: case_analysis
+    subject_terms: [案例, 实践, 应用场景, 建设方案, 实施]
+    action_terms: [成效, 效果, 提升, 降低, 节省, 落地, 投产]
+    exclude_terms: [征集, 名单, 公示]
+    topic_tags: [case, industry_application]
+  - id: official_case_hub.application_opportunity
+    priority: 80
+    primary_type: application_opportunity
+    subject_terms: [案例, 项目, 成果]
+    action_terms: [征集, 申报, 参评]
+    exclude_terms: [结果, 名单]
+    topic_tags: [case]

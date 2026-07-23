@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example AI News</title>
+    <link>https://example.com/</link>
+    <description>Example feed</description>
+    <item>
+      <title>Example model reaches stable release</title>
+      <link>https://example.com/news/model-v1?utm_source=feed#top</link>
+      <pubDate>Thu, 16 Jul 2026 08:30:00 GMT</pubDate>
+      <description><![CDATA[<p>A concise <strong>release summary</strong>.</p>]]></description>
+    </item>
+    <item>
+      <title>Broken entry without a link</title>
+      <pubDate>not-a-date</pubDate>
+    </item>
+    <item>
+      <title>Second valid entry</title>
+      <link>/news/second</link>
+      <description>Second summary</description>
+    </item>
+  </channel>
+</rss>

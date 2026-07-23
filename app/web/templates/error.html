@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}操作未完成 · AI 行业情报{% endblock %}
+{% block content %}
+  <section class="empty-state">
+    <h1 style="font-size:var(--fs-title);margin-bottom:8px">{{ status_code }}</h1>
+    <h2>操作未完成</h2>
+    <p>{{ message }}</p>
+    <a class="btn btn-primary" href="/">返回资讯</a>
+  </section>
+{% endblock %}

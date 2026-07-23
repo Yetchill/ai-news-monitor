@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}更新记录 · AI 行业情报{% endblock %}
+{% block content %}
+  <div class="page-head"><div class="page-head-text"><h1>更新记录</h1><p>每次更新的执行结果、来源明细与未通过准入的原因汇总。</p></div></div>
+
+  <div class="stats-strip" aria-label="运行概览">
+    <div class="stat"><span class="stat-num">{{ overview.total }}</span><span class="stat-label">记录总数</span></div>
+    <div class="stat"><span class="stat-num stat-unread">{{ overview.success }}</span><span class="stat-label">近 7 天成功</span></div>
+    <div class="stat"><span class="stat-num stat-warn">{{ overview.partial_success }}</span><span class="stat-label">近 7 天部分成功</span></div>
+    <div class="stat"><span class="stat-num stat-danger">{{ overview.failed }}</span><span class="stat-label">近 7 天失败</span></div>
+  </div>
+
+  <form class="filter-panel" method="get" action="/runs">
+    <div class="filter-main runs-filter-grid">
+      <div class="field"><label for="rf-status">状态</label><select id="rf-status" name="status"><option value="">全部状态</option>{% for status in statuses %}<option value="{{ status.value }}" {% if filters.status == status %}selected{% endif %}>{{ status_label(status) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="rf-trigger">触发方式</label><select id="rf-trigger" name="trigger"><option value="">全部方式</option>{% for trigger in triggers %}<option value="{{ trigger.value }}" {% if filters.trigger == trigger %}selected{% endif %}>{{ trigger_label(trigger) }}</option>{% endfor %}</select></div>
+      <div class="field runs-date-field"><label for="rf-started-from">开始时间</label><input id="rf-started-from" type="date" name="started_from" value="{{ filters.started_from or '' }}" min="2000-01-01" max="{{ today_date }}"></div>
+      <div class="field runs-date-field"><label for="rf-started-to">结束时间</label><input id="rf-started-to" type="date" name="started_to" value="{{ filters.started_to or '' }}" min="2000-01-01" max="{{ today_date }}"></div>
+      <div class="field field-narrow"><label for="rf-per-page">每页</label><select id="rf-per-page" name="per_page">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if filters.per_page == size %}selected{% endif %}>{{ size }} 条</option>{% endfor %}</select></div>
+      <div class="filter-actions"><button class="btn btn-primary" type="submit">筛选</button><a class="btn btn-secondary" href="/runs">清除</a></div>
+    </div>
+  </form>
+
+  {% if page.entries %}
+    <div class="table-wrap">
+      <table class="data-table table-cards">
+        <thead><tr><th>状态</th><th>触发方式</th><th>开始 / 完成</th><th class="col-optional">耗时</th><th>来源</th><th>抓取</th><th>通过准入</th><th>拒绝</th><th class="col-optional">分类</th><th>新增</th><th class="col-optional">更新</th><th class="col-optional">重复</th><th>失败</th></tr></thead>
+        <tbody>
+          {% for run in page.entries %}
+            {% set status_kind = 'ok' if run.status.value == 'success' else ('warn' if run.status.value == 'partial_success' else ('error' if run.status.value == 'failed' else 'info')) %}
+            <tr class="tr-expandable" data-run="{{ run.id }}" id="run-{{ run.id }}">
+              <td data-label="状态" class="cell-block"><div><span class="expand-caret"></span><span class="status status-{{ status_kind }}">{{ status_label(run.status) }}</span></div><div class="cell-sub">运行 #{{ run.id }}</div></td>
+              <td data-label="触发方式">{{ trigger_label(run.trigger) }}</td>
+              <td data-label="开始 / 完成" class="cell-block"><div class="cell-time">{{ format_time(run.started_at) }}</div><div class="cell-sub">{{ format_time(run.finished_at) }} 完成</div></td>
+              <td data-label="耗时" class="cell-time col-optional">{% if run.duration_seconds is not none %}{{ run.duration_seconds }} 秒{% else %}运行中{% endif %}</td>
+              <td data-label="来源" class="num">{{ run.source_success }} / {{ run.source_total }}</td><td data-label="抓取" class="num">{{ run.discovered_count }}</td><td data-label="通过准入" class="num">{{ run.accepted_count }}</td><td data-label="拒绝" class="num">{{ run.rejected_count }}</td><td data-label="分类" class="num col-optional">{{ run.classified_count }}</td><td data-label="新增" class="num">{{ run.new_count }}</td><td data-label="更新" class="num col-optional">{{ run.updated_count }}</td><td data-label="重复" class="num col-optional">{{ run.duplicate_count }}</td><td data-label="失败" class="num">{{ run.failed_count }}</td>
+            </tr>
+            <tr class="tr-expand"><td colspan="13"><div class="expand-grid">
+              <div class="expand-block">
+                <h3>来源明细</h3>
+                {% if run.source_executions %}
+                  <table class="mini-table"><thead><tr><th>来源</th><th>结果</th><th>抓取</th><th>准入</th><th>拒绝</th><th>新增</th><th>备注</th></tr></thead><tbody>{% for source in run.source_executions %}<tr><td><a class="text-link" href="/sources/{{ source.source_id }}">{{ source.source_name }}</a></td><td><span class="status status-{{ 'ok' if source.status == 'success' else 'error' }}">{{ '成功' if source.status == 'success' else '失败' }}</span></td><td class="num">{{ source.discovered }}</td><td class="num">{{ source.accepted }}</td><td class="num">{{ source.rejected }}</td><td class="num">{{ source.new }}</td><td>{{ source.error or '—' }}</td></tr>{% endfor %}</tbody></table>
+                {% else %}<p class="muted">此历史记录没有保存来源级明细。</p>{% endif %}
+              </div>
+              {% if run.rejection_reason_counts %}<div class="expand-block"><h3>未通过准入原因</h3><ul class="reason-list">{% for reason, count in run.rejection_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul></div>{% endif %}
+              {% if run.failure_reason_counts %}<div class="expand-block"><h3>处理失败原因</h3><ul class="reason-list">{% for reason, count in run.failure_reason_counts.items() %}<li><span>{{ process_reason_label(reason) }}</span><b>{{ count }} 条</b></li>{% endfor %}</ul></div>{% endif %}
+              <div class="expand-block"><h3>运行摘要</h3><dl class="kv-list"><div class="kv-row"><dt>耗时</dt><dd>{% if run.duration_seconds is not none %}{{ run.duration_seconds }} 秒{% else %}运行中{% endif %}</dd></div><div class="kv-row"><dt>成功来源</dt><dd>{{ run.source_success }}</dd></div><div class="kv-row"><dt>失败来源</dt><dd>{{ run.source_failed }}</dd></div><div class="kv-row"><dt>规范化</dt><dd>{{ run.normalized_count }}</dd></div><div class="kv-row"><dt>待分类</dt><dd>{{ run.unclassified_count }}</dd></div><div class="kv-row"><dt>跳过</dt><dd>{{ run.skipped_count }}</dd></div></dl>{% if run.error_summary %}<h3 style="margin-top:12px">错误摘要</h3><div class="error-box">{{ run.error_summary }}</div>{% endif %}</div>
+            </div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <section class="empty-state"><h2>没有符合条件的更新记录</h2><p>请调整筛选条件；首次运行更新后，结果会显示在这里。</p><a class="btn btn-secondary" href="/runs">清除筛选</a></section>
+  {% endif %}
+  {% include "pagination.html" %}
+{% endblock %}

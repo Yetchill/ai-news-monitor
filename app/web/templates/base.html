@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}AI 行业情报{% endblock %}</title>
+    <link rel="stylesheet" href="{{ request.url_for('static', path='styles.css') }}">
+    <script src="{{ request.url_for('static', path='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="site-nav-inner">
+        <a class="brand" href="/">AI 行业情报</a>
+        <nav class="main-nav" aria-label="主导航">
+          <a href="/" {% if request.url.path == '/' %}class="is-active" aria-current="page"{% endif %}>资讯</a>
+          <a href="/ai" {% if request.url.path.startswith('/ai') %}class="is-active" aria-current="page"{% endif %}>AI</a>
+          <a href="/sources" {% if request.url.path.startswith('/sources') and not request.url.path.startswith('/sources/discover') %}class="is-active" aria-current="page"{% endif %}>来源</a>
+          <a href="/settings" {% if request.url.path == '/settings' %}class="is-active" aria-current="page"{% endif %}>设置</a>
+          <a href="/runs" {% if request.url.path == '/runs' %}class="is-active" aria-current="page"{% endif %}>更新记录</a>
+        </nav>
+      </div>
+    </header>
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

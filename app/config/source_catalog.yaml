@@ -1,0 +1,780 @@
+version: 1
+sources:
+  - slug: nda-news
+    name: 国家数据局新闻动态
+    url: https://www.nda.gov.cn/sjj/swdt/list/index_pc_1.html
+    lifecycle_state: active
+    source_role: official_industry
+    source_tier: government
+    audience: leadership
+    crawl_mode: html_list
+    review_policy: auto_publish
+    allowed_primary_types: [policy_standard, application_opportunity, award_result, report_release, industry_signal]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 45
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 服务端列表可由受限 HTML selector 解析；普通活动仍由角色准入过滤。
+    verified_at: 2026-07-20T00:00:00+08:00
+    activation_evidence: 阶段八 A 同站点 HTML 列表能力及固定样本验证；阶段八 B 切换到新闻动态规范入口。
+    notes: 严格过滤培训、调研、座谈会和普通领导活动。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [www.nda.gov.cn]
+      discovery: {mode: selectors, max_pages: 1, max_depth: 0, max_items: 20}
+      extraction: {item_selector: ".u-list > li, .list li", title_selector: a, link_selector: a, date_selector: span}
+    include_terms: [人工智能, 大模型, 智能体, 算力, 高质量数据集, 数据要素, AI]
+    exclude_terms: [招聘, 培训, 调研, 座谈会, 领导活动, 活动回顾]
+    minimum_quality_score: 48
+    allow_external_links: false
+
+  - slug: cac-policy-regulations
+    name: 国家网信办政策法规
+    url: https://www.cac.gov.cn/wxzw/zcfg/A093703index_1.htm
+    lifecycle_state: active
+    source_role: official_policy
+    source_tier: government
+    audience: leadership
+    crawl_mode: html_list
+    review_policy: auto_publish
+    allowed_primary_types: [policy_standard, application_opportunity, report_release]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 60
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 服务端政策列表结构与阶段八 A 已验证栏目一致。
+    verified_at: 2026-07-20T00:00:00+08:00
+    activation_evidence: 阶段八 A 网信办 HTML 列表与固定样本验证；本目录使用政策法规规范入口。
+    notes: 只保留正式政策、法规、标准、征求意见和治理文件。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [www.cac.gov.cn]
+      discovery: {mode: selectors, max_pages: 1, max_depth: 0, max_items: 20}
+      extraction: {item_selector: "#loadingInfoPage > li", title_selector: "h5 a", link_selector: "h5 a", date_selector: .times}
+    include_terms: [人工智能, 大模型, 智能体, 算法, 生成式, 数据安全]
+    exclude_terms: [培训, 调研, 座谈会, 领导活动]
+    minimum_quality_score: 50
+    allow_external_links: false
+
+  - slug: isc-notices
+    name: 中国互联网协会通知公告
+    url: https://www.isc.org.cn/category/7330.html
+    lifecycle_state: active
+    source_role: opportunity_and_award_hub
+    source_tier: association
+    audience: leadership
+    crawl_mode: html_list
+    review_policy: auto_publish
+    allowed_primary_types: [policy_standard, application_opportunity, award_result, report_release]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 60
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 阶段八 A 已验证的服务端列表 selector。
+    verified_at: 2026-07-20T00:00:00+08:00
+    activation_evidence: 阶段八 A 真实网络与固定样本 preview 成功。
+    notes: 过滤培训、普通会议、会员和非 AI 通知。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [www.isc.org.cn]
+      discovery: {mode: selectors, max_pages: 1, max_depth: 0, max_items: 20}
+      extraction: {item_selector: ".news-list > li", title_selector: h3, link_selector: a, date_selector: ".msg span"}
+    include_terms: [人工智能, 大模型, 智能体, AI, 算法]
+    exclude_terms: [培训, 会议, 会员, 招聘, 活动回顾]
+    minimum_quality_score: 48
+    allow_external_links: false
+
+  - slug: caict-aihub-docs
+    name: 鲸智社区文档中心
+    url: https://aihub.caict.ac.cn/docs
+    lifecycle_state: candidate
+    source_role: report_hub
+    source_tier: association
+    audience: leadership
+    crawl_mode: document_hub
+    review_policy: review_on_low_confidence
+    allowed_primary_types: [report_release, application_opportunity, award_result]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 365
+    max_items_per_run: 20
+    implementation_status: needs_custom_collector
+    implementation_reason: 服务端页面为 Vite 壳；公开 sitemap 索引存在，但其当前分片返回 404，docs 列表 GET 尚未确认；需要专用 DocumentHubCollector。
+    verified_at: null
+    activation_evidence: null
+    notes: 由旧 AIIA 受管来源安全迁移；不得与同 URL 重复创建。
+    collector_name: document_hub
+    collector_config: {}
+    include_terms: [人工智能, 大模型, 智能体, 报告, 白皮书, 案例集, 标准, 征集]
+    exclude_terms: [培训, 会议回顾]
+    minimum_quality_score: 45
+    allow_external_links: true
+
+  - slug: baidu-cloud-news
+    name: 百度智能云新闻
+    url: https://cloud.baidu.com/news/news
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: html_list
+    review_policy: auto_publish
+    allowed_primary_types: [product_update, report_release, award_result]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 45
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 阶段八 A 已验证稳定的详情 URL 过滤模式。
+    verified_at: 2026-07-20T00:00:00+08:00
+    activation_evidence: 阶段八 A 真实网络与固定样本 preview 成功。
+    notes: 仅接受文心、千帆、Agent、智能体和大模型平台重要发布。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [cloud.baidu.com]
+      discovery: {mode: link_filter, max_pages: 1, max_depth: 0, max_items: 20, include_url_patterns: [/news/news_]}
+    include_terms: [人工智能, 大模型, 文心, 智能体, Agent, 千帆]
+    exclude_terms: [普通云产品, 优惠, 活动, 合作宣传, 招聘]
+    minimum_quality_score: 48
+    allow_external_links: false
+
+  - slug: deepseek-api-updates
+    name: DeepSeek API 更新日志
+    url: https://api-docs.deepseek.com/zh-cn/updates/
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: single_page_changelog
+    review_policy: auto_publish
+    allowed_primary_types: [product_update]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 日期 h2 与更新 h3 已稳定配对，真实 preview 18 条且标题、日期、链接均为 100%。
+    verified_at: 2026-07-20T13:12:20+08:00
+    activation_evidence: 真实 activate preview extracted=18，product_update=18，重复率 0%。
+    notes: 优先级第一批真实 preview。
+    collector_name: single_page_changelog
+    collector_config:
+      content_selector: .theme-doc-markdown
+      date_heading_selector: h2
+      entry_selector: h3
+      append_summary_when_title_lacks_action: true
+      keep_query_params: [entry]
+    include_terms: [DeepSeek, API, 模型, 更新]
+    exclude_terms: [教程, 常见问题]
+    minimum_quality_score: 35
+    allow_external_links: false
+
+  - slug: zhipu-research
+    name: 智谱研究与模型发布
+    url: https://www.zhipuai.cn/zh/research
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: html_list
+    review_policy: auto_publish
+    allowed_primary_types: [product_update, report_release]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 公开服务端页面含稳定研究条目和 ID；专用 selector preview 抽取 15 条，标题、日期、详情链接有效率均为 100%。
+    verified_at: 2026-07-20T13:23:58+08:00
+    activation_evidence: 真实 preview 通过且已由 sources activate --confirm 激活；详情链接由公开页面内嵌 ID 生成。
+    notes: 不引入浏览器自动化。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [www.zhipuai.cn]
+      discovery: {mode: selectors, max_pages: 1, max_depth: 0, max_items: 20}
+      extraction:
+        item_selector: 'main div[class*="border-b"][class*="px-4"][class*="py-10"]'
+        title_selector: div.text-xl
+        date_selector: p
+        embedded_title_key: title_zh
+        embedded_link_key: id
+        embedded_link_template: /zh/research/{value}
+    include_terms: [模型, 大模型, 智谱, GLM, 开源, 研究]
+    exclude_terms: [活动, 招聘]
+    minimum_quality_score: 40
+    allow_external_links: false
+
+  - slug: baidu-qianfan-model-updates
+    name: 百度千帆模型更新记录
+    url: https://cloud.baidu.com/doc/qianfan/s/Kmh4stnjp
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: single_page_changelog
+    review_policy: auto_publish
+    allowed_primary_types: [product_update]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 月份 h2 与模型表格行已稳定配对，真实 preview 20 条且标题、日期、链接均为 100%。
+    verified_at: 2026-07-20T13:12:47+08:00
+    activation_evidence: 真实 activate preview extracted=20，product_update=20，重复率 0%。
+    notes: 第一批真实 preview。
+    collector_name: single_page_changelog
+    collector_config:
+      content_selector: .post__body
+      date_heading_selector: h2
+      entry_selector: tbody tr
+      entry_title_cells: [2, 5]
+      entry_date_cell: 0
+      entry_summary_cell: 6
+      entry_title_replacements: {上新: 正式发布}
+      keep_query_params: [entry]
+    include_terms: [千帆, 模型, 更新, 发布, 下线]
+    exclude_terms: [教程]
+    minimum_quality_score: 35
+    allow_external_links: false
+
+  - slug: qwen-official-blog
+    name: Qwen 官方博客
+    url: https://qwen.ai/api/v2/article/retrieval
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: api
+    review_policy: auto_publish
+    allowed_primary_types: [product_update, report_release]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 官方公开 GET JSON API 已确认可用（type=qwen_ai&language=zh-CN），单响应约 5 MB；已实现有界 public_json adapter，限制响应大小 6 MB、最多 50 条。专用 public_json adapter 已落地并在 CollectorRegistry 注册，真实 preview 通过。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 preview extracted=20，accepted=20，标题/日期/链接有效率均为 100%。
+    notes: 不复制 RSSHub route；不引入 Playwright。
+    collector_name: public_json
+    collector_config:
+      query_params: type=qwen_ai&language=zh-CN
+      max_items: 32
+      response_limit_bytes: 6291456
+      items_field: data.articles
+      link_template: https://qwen.ai/blog/{path}
+      date_field: date
+      date_nested_in: extra
+      date_format: iso
+    include_terms: [Qwen, 模型, Agent, 发布, 开源]
+    exclude_terms: [活动]
+    minimum_quality_score: 40
+    allow_external_links: false
+
+  - slug: minimax-news
+    name: MiniMax 新闻资讯
+    url: https://www.minimaxi.com/api/news
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: api
+    review_policy: auto_publish
+    allowed_primary_types: [product_update, report_release, award_result]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 60
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 公开 /api/news JSON 无需认证且实测 HTTP 200；专用 MiniMaxNewsCollector 解析，12 条真实数据含完整日期、详情链接和摘要。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 API preview extracted=12，标题/日期/链接有效率均为 100%。
+    notes: 公开 API 入口，返回生态适配、产品发布和合规公告；少量合作类公告可通过 admission 过滤。
+    collector_name: minimax_news
+    collector_config: {max_items: 50}
+    include_terms: [模型, 大模型, 智能体, Agent, API, MiniMax, M3, M2, 开源, 发布]
+    exclude_terms: [活动, 演讲, 参展, 招聘]
+    minimum_quality_score: 40
+    allow_external_links: false
+
+  - slug: kimi-platform-changelog
+    name: Kimi 开放平台更新日志
+    url: https://platform.kimi.com/blog/posts/changelog
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: single_page_changelog
+    review_policy: auto_publish
+    allowed_primary_types: [product_update]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 日期 h2 与更新 li 已稳定配对并过滤账户/促销噪声，真实 preview 8 条且标题、日期、链接均为 100%。
+    verified_at: 2026-07-20T13:12:35+08:00
+    activation_evidence: 真实 activate preview extracted=8，accepted=8，重复率 0%。
+    notes: 第一批真实 preview。
+    collector_name: single_page_changelog
+    collector_config:
+      content_selector: article
+      date_heading_selector: h2
+      entry_selector: li
+      include_entry_terms: [模型正式发布, 模型上线, API 发布, Playground 正式发布, 联网搜索功能, Context Caching 功能]
+      exclude_entry_terms: [活动, 五折, 降价, 充值, 发票, 支付, 手机号, 企业认证, 论坛, 文案, 样式]
+      keep_query_params: [entry]
+    include_terms: [Kimi, API, 模型, 更新, 发布, 联网搜索, Context Caching]
+    exclude_terms: [教程]
+    minimum_quality_score: 35
+    allow_external_links: false
+
+  - slug: tencent-hunyuan-product-updates
+    name: 腾讯混元产品动态
+    url: https://cloud.tencent.com/document/product/1729/97765
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: single_page_changelog
+    review_policy: auto_publish
+    allowed_primary_types: [product_update]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 真实 preview HTTP 200，页面为 Slate 编辑器渲染的数据表；专用 date_heading + entry_title_cells 配置已验证可用。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 preview extracted=20，accepted=20，标题/日期/链接有效率均为 100%。
+    notes: 与产品公告保持独立入口。
+    collector_name: single_page_changelog
+    collector_config: {content_selector: "div#doc-slate-root", date_heading_selector: "h2", entry_selector: "tbody tr", entry_title_cells: [0], entry_date_cell: 2, entry_summary_cell: 1, entry_link_cell: 3, exclude_entry_terms: [动态名称], keep_query_params: [entry]}
+    include_terms: [hunyuan, 混元, 模型, API, 更新, 发布, 升级, 上线]
+    exclude_terms: [教程]
+    minimum_quality_score: 35
+    allow_external_links: false
+
+  - slug: tencent-hunyuan-product-announcements
+    name: 腾讯混元产品公告
+    url: https://cloud.tencent.com/document/product/1729/132069
+    lifecycle_state: active
+    source_role: official_product
+    source_tier: official_company
+    audience: leadership
+    crawl_mode: single_page_changelog
+    review_policy: auto_publish
+    allowed_primary_types: [product_update]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 真实 preview HTTP 200，页面为 Slate 编辑器渲染的数据表；专用 entry_title_cells + entry_date_cell 配置已验证可用。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 preview extracted=2，accepted=2，标题/日期/链接有效率均为 100%。
+    notes: 与产品动态保持独立入口。
+    collector_name: single_page_changelog
+    collector_config: {content_selector: "div#doc-slate-root", date_heading_selector: "h3", entry_selector: "tbody tr", entry_title_cells: [0], entry_date_cell: 1, entry_link_cell: 0, exclude_entry_terms: [公告标题], keep_query_params: [entry]}
+    include_terms: [混元, 模型, API, 公告, 更新, 发布, 下线]
+    exclude_terms: [教程]
+    minimum_quality_score: 35
+    allow_external_links: false
+
+  - slug: caict-special-reports
+    name: 中国信通院专题报告
+    url: https://www.caict.ac.cn/kxyj/qwfb/ztbg/
+    lifecycle_state: candidate
+    source_role: report_hub
+    source_tier: association
+    audience: leadership
+    crawl_mode: document_hub
+    review_policy: review_on_low_confidence
+    allowed_primary_types: [report_release]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 365
+    max_items_per_run: 20
+    implementation_status: needs_custom_collector
+    implementation_reason: 真实探测返回 HTTP 412；同时仍需适配报告列表、详情和 PDF/附件关系，当前不得激活。
+    verified_at: null
+    activation_evidence: null
+    notes: 本阶段不做大规模 PDF 拆分或 OCR。
+    collector_name: document_hub
+    collector_config: {}
+    include_terms: [人工智能, 大模型, 智能体, AI, 报告, 白皮书]
+    exclude_terms: [培训]
+    minimum_quality_score: 45
+    allow_external_links: false
+
+  - slug: caict-aihub-cases
+    name: 鲸智社区案例展示
+    url: https://aihub.caict.ac.cn/cases
+    lifecycle_state: candidate
+    source_role: official_case_hub
+    source_tier: association
+    audience: leadership
+    crawl_mode: case_hub
+    review_policy: review_on_low_confidence
+    allowed_primary_types: [case_analysis, award_result]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 730
+    max_items_per_run: 20
+    implementation_status: needs_custom_collector
+    implementation_reason: 公开 /internal_api/cases 无需认证且实测 HTTP 200 JSON；需专用 CaseHub adapter 映射稳定详情链接并验证正文完整度。
+    verified_at: null
+    activation_evidence: null
+    notes: 只有标题和简介时最高为 case_lead。
+    collector_name: case_hub
+    collector_config: {}
+    include_terms: [人工智能, 大模型, 智能体, AI, 案例]
+    exclude_terms: [征集]
+    minimum_quality_score: 40
+    allow_external_links: true
+
+  - slug: caict-aiia-agent-working-group
+    name: AIIA 智能体工作组
+    url: https://aihub.caict.ac.cn/aiia_wgs/101
+    lifecycle_state: candidate
+    source_role: opportunity_and_award_hub
+    source_tier: association
+    audience: leadership
+    crawl_mode: custom
+    review_policy: review_on_low_confidence
+    allowed_primary_types: [policy_standard, application_opportunity, award_result, report_release]
+    homepage_visible: true
+    export_visible: true
+    lookback_days: 180
+    max_items_per_run: 20
+    implementation_status: needs_custom_collector
+    implementation_reason: 真实探测 HTTP 200 但无稳定详情链接且疑似 JavaScript；工作组入口需要专用解析。
+    verified_at: null
+    activation_evidence: null
+    notes: 调查公开静态数据后决定 html_list 或 custom。
+    collector_name: custom
+    collector_config: {}
+    include_terms: [智能体, Agent, 征集, 名单, 标准, 报告]
+    exclude_terms: [会议, 培训]
+    minimum_quality_score: 40
+    allow_external_links: true
+
+  - slug: xinhua-tech
+    name: 新华科技
+    url: https://www.news.cn/tech/index.html
+    lifecycle_state: active
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: html_list
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 真实 preview 抽取 7 条，标题/日期/链接有效率均为 100%；selector 与 include/exclude 在来源层过滤非 AI 内容。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 preview extracted=8，accepted=7（AI 相关内容），1 条被 admission 拒绝（无 AI 关键词/会议报道）。
+    notes: 技术可用后可 active 采集行业线索，但永不自动正式发布。来源层 include/exclude 强过滤，排除消费电子、汽车、手机和泛科技导航。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [www.news.cn]
+      filter_selector_items: true
+      discovery:
+        mode: selectors
+        max_pages: 1
+        max_depth: 0
+        max_items: 20
+        include_text: [人工智能, 大模型, 智能体, AI, 算力, 开源, 模型, Agent, 算法]
+        exclude_text: [大会前瞻, 论坛开幕, 消费电子, 手机, 家电, 汽车, 新能源, 火箭, 快递, 物流, 二手车, 人物, 采访]
+      extraction: {item_selector: .item, title_selector: .tit a, link_selector: .tit a, date_selector: .time}
+    include_terms: [人工智能, 大模型, 智能体, AI, 模型, 开源, 算力]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦, 消费电子, 家电, 手机, 汽车, 新能源车, 快递, 物流]
+    minimum_quality_score: 30
+    allow_external_links: false
+
+  - slug: cls-ai-subject
+    name: 财联社人工智能专题
+    url: https://www.cls.cn/subject/1321
+    lifecycle_state: active
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: api
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 独立解析专题页公开 __NEXT_DATA__；真实 preview 抽取 20 条，标题、日期、链接有效率均为 100%，重复率 0%。
+    verified_at: 2026-07-20T13:52:56+08:00
+    activation_evidence: 真实 public JSON preview 通过且已由 sources activate --confirm 激活；媒体条目全部 pending，传闻严格隔离。
+    notes: 媒体内容默认 media_only + pending。
+    collector_name: cls_topic
+    collector_config: {max_items: 20}
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: infoq-ai-llm
+    name: InfoQ AI 与大模型
+    url: https://www.infoq.cn/topic/AI%26LLM
+    lifecycle_state: active
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: api
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 官方公开 POST API 已确认可用（topic/getInfo + article/getList），已实现专用 infoq_ai adapter；POST 端点与请求体锁定为来源专用，不暴露通用 POST 机制。专用 infoq_ai adapter 已落地并在 CollectorRegistry 注册，真实 preview 通过。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 preview extracted=19，accepted=13，标题/日期/链接有效率均为 100%。
+    notes: 不复制 RSSHub route；POST 端点/请求体/分页均锁定在 Collector 代码内。
+    collector_name: infoq_ai
+    collector_config:
+      topic_alias: AI&LLM
+      max_pages: 3
+      max_items: 30
+      response_limit_bytes: 2097152
+    include_terms: [人工智能, 大模型, 智能体, AI, LLM]
+    exclude_terms: [招聘, 课程]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: zhidx-news
+    name: 智东西快讯
+    url: https://zhidx.com/news
+    lifecycle_state: candidate
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: html_list
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: research_needed
+    implementation_reason: 真实 preview 仅抽取 2 个旧话题标签，日期覆盖率 0% 且存在导航误抓；需专用快讯列表适配。
+    verified_at: null
+    activation_evidence: null
+    notes: 技术可用后可 active，但默认不进首页和正式导出。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [zhidx.com]
+      filter_selector_items: true
+      discovery:
+        mode: selectors
+        max_pages: 1
+        max_depth: 0
+        max_items: 20
+        include_text: [人工智能, AI, 大模型, 智能体, Agent, 模型]
+        exclude_text: [融资, 股价, IPO, 上市, 人物]
+      extraction:
+        item_selector: .news-item
+        title_selector: a.title
+        link_selector: a.title
+        date_selector: .time
+        ancestor_date_selector: .title-name
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: qbitai
+    name: 量子位
+    url: https://www.qbitai.com/category/%E8%B5%84%E8%AE%AF/feed
+    lifecycle_state: active
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: rss
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 直接读取站点官方“资讯”WordPress Feed；真实 preview 抽取 10 条，标题、日期、链接有效率均为 100%，重复率 0%。
+    verified_at: 2026-07-20T13:49:35+08:00
+    activation_evidence: 真实 RSS preview 通过且已由 sources activate --confirm 激活；全部媒体条目仍为 media_only、pending。
+    notes: 直接消费网站官方 Feed，不依赖 RSSHub 实例，也不复制 AGPL route 源码。
+    collector_name: rss
+    collector_config: {max_items: 20}
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: 36kr-newsflashes
+    name: 36 氪快讯
+    url: https://36kr.com/newsflashes
+    lifecycle_state: active
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: html_list
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 专用快讯 selector 可解析相对时间与稳定详情链接；严格词表后真实 preview 抽取 2 条，标题、日期、链接有效率均为 100%。
+    verified_at: 2026-07-20T13:24:04+08:00
+    activation_evidence: 真实 preview 通过且已由 sources activate --confirm 激活；会议稿仍由 BasicAdmissionPolicy 拒绝。
+    notes: active 仅表示采集行业线索；内容保持 media_only、pending，且不进首页和正式导出。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [36kr.com]
+      filter_selector_items: true
+      discovery:
+        mode: selectors
+        max_pages: 1
+        max_depth: 0
+        max_items: 20
+        include_text: [人工智能, AI, 大模型, 智能体, Agent, 模型, 算力]
+        exclude_text: [融资, 股价, 股票, IPO, 上市, 回购, 指数, 概念股]
+      extraction: {item_selector: .newsflash-item, title_selector: a.item-title, link_selector: a.item-title, date_selector: .time}
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: [融资, 股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: leiphone-ai
+    name: 雷锋网 AI
+    url: https://www.leiphone.com/feed
+    lifecycle_state: candidate
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: rss
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 直接消费站点官方 RSS Feed，按 category 过滤 AI 相关条目。
+    verified_at: null
+    activation_evidence: null
+    notes: 全站 RSS Feed，通过 include_categories 筛选人工智能/人工智能学术分类；RSS 不含非 AI 详情。
+    collector_name: rss
+    collector_config:
+      max_items: 20
+      include_categories: [人工智能, 人工智能学术]
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: geekpark-ai
+    name: 极客公园
+    url: https://www.geekpark.net
+    lifecycle_state: candidate
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: custom
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: blocked_by_javascript
+    implementation_reason: 全站强 WAF 阻断；www.geekpark.net 主站 403，/feed /rss /news /ai 等全部 404 或被拦截，m./api. 子域同样被拦，当前无可合规采集通道。
+    verified_at: null
+    activation_evidence: null
+    notes: 2026-07-21 调查确认 WAF 阻断；无可合规采集通道；不新增 Collector；不伪造 fixture；保持 candidate 待未来方案。
+    collector_name: custom
+    collector_config: {}
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: []
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: ithome-ai
+    name: IT之家 AI
+    url: https://www.ithome.com/list/ai.html
+    lifecycle_state: active
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: html_list
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: SSR HTML 列表页已验证 200；selector 提取标题、日期、详情链接；来源层 include 过滤 AI 内容。
+    verified_at: 2026-07-21T00:00:00+08:00
+    activation_evidence: 真实 preview extracted=9，accepted=6，标题/日期/链接有效率均为 100%。
+    notes: 列表页为全站滚动新闻，AI 内容通过 include_terms 和 discovery.include_text 在来源层过滤；日期格式 YYYY-MM-DD HH:MM:SS。
+    collector_name: html_list
+    collector_config:
+      allowed_domains: [www.ithome.com, ithome.com]
+      filter_selector_items: true
+      discovery:
+        mode: selectors
+        max_pages: 1
+        max_depth: 0
+        max_items: 20
+        include_text: [人工智能, AI, 大模型, 智能体, Agent, 模型, 算力, 开源]
+        exclude_text: [漫威, 手机, 汽车, 家电, 游戏, Windows]
+        exclude_url_patterns: [/rss/, /tag/, /search/, /user/, /login]
+      extraction:
+        item_selector: "#list ul.datel li"
+        title_selector: a.t
+        link_selector: a.t
+        date_selector: i
+    include_terms: [人工智能, 大模型, 智能体, AI]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false
+
+  - slug: huxiu-ai
+    name: 虎嗅 AI
+    url: https://www.huxiu.com/article/
+    lifecycle_state: candidate
+    source_role: media_discovery
+    source_tier: authoritative_media
+    audience: all
+    crawl_mode: custom
+    review_policy: always_review
+    allowed_primary_types: [industry_signal]
+    homepage_visible: false
+    export_visible: false
+    lookback_days: 30
+    max_items_per_run: 20
+    implementation_status: ready
+    implementation_reason: 专用 HuxiuCollector 解析页面内嵌 __NUXT_DATA__ 获取 datalist，提取 aid/title/url/dateline。
+    verified_at: null
+    activation_evidence: null
+    notes: 全站文章列表无 AI 专属频道；来源层 include_terms 过滤 AI/大模型/智能体内容；排除 /channel/ /tag/ /member/ /moment/ /video/ /club/ 等非文章链接；__NUXT_DATA__ 结构升级风险中。
+    collector_name: huxiu
+    collector_config: {max_items: 20}
+    include_terms: [人工智能, 大模型, 智能体, AI, Agent, 模型]
+    exclude_terms: [股价, 概念股, IPO, 人物八卦]
+    minimum_quality_score: 25
+    allow_external_links: false

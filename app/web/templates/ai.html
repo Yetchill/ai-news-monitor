@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}AI · AI 行业情报{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div class="page-head-text">
+      <h1>AI</h1>
+      <p>配置大模型服务，并管理 AI 分类与 AI 总结的执行方式。</p>
+    </div>
+    <div class="page-head-side page-head-status">
+      <span class="status {{ 'status-ok' if config.api_key_configured else 'status-muted' }}" id="ai-key-status">{{ 'Key 已配置' if config.api_key_configured else 'Key 未配置' }}</span>
+      <span class="last-updated">当前模型：<b id="ai-current-model">{{ config.model or '未设置' }}</b></span>
+    </div>
+  </div>
+
+  {% if saved %}<div class="notice is-success">设置已保存。</div>{% endif %}
+  {% if key_cleared %}<div class="notice is-success">API Key 已清除。</div>{% endif %}
+  {% if test_result %}
+    <div class="notice {{ 'is-success' if test_ok else 'is-error' }}">{{ test_result }}</div>
+  {% endif %}
+  {% if classifier_running %}<div class="notice">AI 分类任务已提交，稍后刷新查看结果。</div>{% endif %}
+  {% if summarizer_running %}<div class="notice">AI 总结任务已提交，稍后刷新查看结果。</div>{% endif %}
+
+  <div class="ai-layout">
+    <div class="ai-col">
+      <section class="section-card">
+        <div class="section-head">
+          <h2>模型连接</h2>
+          <p>用于 AI 分类与总结的大模型服务。修改后请点击保存生效。</p>
+        </div>
+        <form class="form-grid" id="ai-form" method="post" action="/ai/save">
+          <div class="field">
+            <label for="ai-provider">服务商</label>
+            <select id="ai-provider" name="provider">
+              <option value="deepseek" {% if config.provider == 'deepseek' %}selected{% endif %}>DeepSeek</option>
+              <option value="openai" {% if config.provider == 'openai' %}selected{% endif %}>OpenAI 兼容接口</option>
+              <option value="custom" {% if config.provider == 'custom' %}selected{% endif %}>自定义</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ai-model">模型名称</label>
+            <input id="ai-model" name="model" value="{{ config.model or 'deepseek-chat' }}" maxlength="100">
+          </div>
+          <div class="field form-grid-wide">
+            <label for="ai-base-url">接口地址（Base URL）</label>
+            <input id="ai-base-url" name="base_url" value="{{ config.base_url or 'https://api.deepseek.com' }}" maxlength="500">
+          </div>
+          <div class="field form-grid-wide">
+            <label for="ai-key">API Key</label>
+            <input id="ai-key" type="password" name="api_key" value="" placeholder="{% if config.api_key_configured %}已保存 {{ config.masked_key }}，留空表示不修改{% else %}未配置 Key{% endif %}" maxlength="500" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="ai-timeout">超时时间（秒）</label>
+            <input id="ai-timeout" type="number" name="timeout_seconds" value="{{ config.timeout_seconds }}" min="5" max="300">
+          </div>
+          <div class="field">
+            <label for="ai-retries">失败重试次数</label>
+            <input id="ai-retries" type="number" name="max_retries" value="{{ config.max_retries }}" min="0" max="5">
+          </div>
+          <div class="form-grid-wide">
+            <div class="form-actions">
+              <button class="btn btn-primary" id="ai-save" type="submit">保存设置</button>
+              <button class="btn btn-secondary" id="ai-test" type="submit" formaction="/ai/test-connection">测试连接</button>
+              {% if config.api_key_configured %}
+                <button class="btn btn-text btn-danger-text" id="ai-clear-key" type="submit" formaction="/ai/clear-key">清除 Key</button>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="section-card">
+        <div class="section-head">
+          <h2>配置说明</h2>
+        </div>
+        <ul class="note-list">
+          <li>网页保存的设置优先于环境变量；Key 保存在本机数据库中，应用仅监听本机地址，不会暴露到局域网。</li>
+          <li>AI 分类与总结按调用量产生费用，自动模式下每次更新都会消耗额度。</li>
+          <li>AI 处理失败不会影响资讯入库，失败的条目可稍后重试。</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="ai-col">
+      <section class="section-card">
+        <div class="section-head">
+          <h2>AI 分类</h2>
+          <p>在规则分类之外，用 AI 判断资讯所属分类。</p>
+        </div>
+        <div class="option-list" id="classifier-mode">
+          <label class="option-row{% if config.classifier_mode == 'off' %} is-selected{% endif %}">
+            <input type="radio" name="classifier_mode" value="off" form="ai-form" {% if config.classifier_mode == 'off' %}checked{% endif %}>
+            <span class="option-text"><b>关闭</b><small>仅使用规则分类，不调用 AI</small></span>
+          </label>
+          <label class="option-row{% if config.classifier_mode == 'manual' or not config.classifier_mode %} is-selected{% endif %}">
+            <input type="radio" name="classifier_mode" value="manual" form="ai-form" {% if config.classifier_mode == 'manual' or not config.classifier_mode %}checked{% endif %}>
+            <span class="option-text"><b>手动</b><small>在资讯页勾选执行，或在此处理全部待分类</small></span>
+          </label>
+          <label class="option-row{% if config.classifier_mode == 'auto' %} is-selected{% endif %}">
+            <input type="radio" name="classifier_mode" value="auto" form="ai-form" {% if config.classifier_mode == 'auto' %}checked{% endif %}>
+            <span class="option-text"><b>自动参与更新</b><small>每次更新后自动处理新入库的资讯</small></span>
+          </label>
+        </div>
+        <div class="field option-extra" id="classifier-strategy" {% if config.classifier_mode != 'auto' %}hidden{% endif %}>
+          <label for="ai-strategy">自动分类策略</label>
+          <select id="ai-strategy" name="classifier_strategy" form="ai-form">
+            <option value="hybrid" {% if config.classifier_strategy == 'hybrid' %}selected{% endif %}>混合分类（仅处理待分类与低置信度，推荐）</option>
+            <option value="full_ai" {% if config.classifier_strategy == 'full_ai' %}selected{% endif %}>全量 AI 分类（处理全部资讯，费用较高）</option>
+          </select>
+        </div>
+        <div class="section-foot">
+          <span class="foot-stat">当前待分类 <b>{{ work_overview.unclassified }}</b> 条</span>
+          <form method="post" action="/ai/classify" style="display:contents">
+            <input type="hidden" name="item_ids" value="">
+            <button class="btn btn-secondary btn-sm" id="ai-run-classify" type="submit" {% if not config.api_key_configured %}disabled{% endif %}>处理待分类资讯</button>
+          </form>
+          <span class="foot-note">自动模式下按调用量计费，混合策略费用更低。</span>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="section-head">
+          <h2>AI 总结</h2>
+          <p>为资讯生成更精炼的中文摘要，便于快速浏览。</p>
+        </div>
+        <div class="option-list" id="summarizer-mode">
+          <label class="option-row{% if config.summarizer_mode == 'off' %} is-selected{% endif %}">
+            <input type="radio" name="summarizer_mode" value="off" form="ai-form" {% if config.summarizer_mode == 'off' %}checked{% endif %}>
+            <span class="option-text"><b>关闭</b><small>不使用 AI 总结</small></span>
+          </label>
+          <label class="option-row{% if config.summarizer_mode == 'manual' or not config.summarizer_mode %} is-selected{% endif %}">
+            <input type="radio" name="summarizer_mode" value="manual" form="ai-form" {% if config.summarizer_mode == 'manual' or not config.summarizer_mode %}checked{% endif %}>
+            <span class="option-text"><b>手动</b><small>在资讯页勾选执行，或在此处理全部未总结</small></span>
+          </label>
+          <label class="option-row{% if config.summarizer_mode == 'auto' %} is-selected{% endif %}">
+            <input type="radio" name="summarizer_mode" value="auto" form="ai-form" {% if config.summarizer_mode == 'auto' %}checked{% endif %}>
+            <span class="option-text"><b>自动参与更新</b><small>每次更新后自动总结新入库的资讯</small></span>
+          </label>
+        </div>
+        <div class="section-foot">
+          <span class="foot-stat">尚未总结 <b>{{ work_overview.unsummarized }}</b> 条</span>
+          <form method="post" action="/ai/summarize" style="display:contents">
+            <input type="hidden" name="item_ids" value="">
+            <button class="btn btn-secondary btn-sm" id="ai-run-summarize" type="submit" {% if not config.api_key_configured %}disabled{% endif %}>总结未处理资讯</button>
+          </form>
+          <form method="post" action="/ai/summarize" style="display:contents">
+            <input type="hidden" name="item_ids" value="">
+            <input type="hidden" name="retry" value="1">
+            <button class="btn btn-text btn-sm" id="ai-retry-summarize" type="submit" {% if not config.api_key_configured %}disabled{% endif %}>仅重试失败项</button>
+          </form>
+          <span class="foot-note">AI 摘要单独保存，不会覆盖来源原始摘要。</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  {% if recent_jobs %}
+    <section class="section-card">
+      <div class="section-head">
+        <h2>最近 AI 任务</h2>
+        <p>每次手动或自动执行的记录，失败详情可展开查看。</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table table-cards">
+          <thead><tr>
+            <th>类型</th><th>触发方式</th><th>状态</th><th>处理总数</th><th>成功</th><th>失败</th>
+            <th class="col-optional">跳过</th><th class="col-optional">回退</th>
+            <th class="col-optional">模型</th><th>开始时间</th><th>耗时</th>
+          </tr></thead>
+          <tbody>
+            {% for job in recent_jobs %}
+              {% set status_kind = {
+                'SUCCEEDED': 'ok', 'SUCCESS': 'ok', 'success': 'ok',
+                'PARTIAL': 'warn', 'partially_succeeded': 'warn',
+                'FAILED': 'error', 'failed': 'error',
+                'RUNNING': 'info', 'running': 'info'
+              }.get(job.status|string, 'info') %}
+              <tr class="tr-expandable" data-job="{{ job.id }}">
+                <td data-label="类型"><span class="expand-caret"></span>{{ '分类' if job.job_type == 'classification' else '总结' }}</td>
+                <td data-label="触发方式">{{ '手动' if job.trigger == 'manual' else '自动' }}</td>
+                <td data-label="状态"><span class="status status-{{ status_kind }}">{{ {'SUCCEEDED': '已完成', 'SUCCESS': '已完成', 'success': '已完成', 'PARTIAL': '部分失败', 'partially_succeeded': '部分失败', 'FAILED': '失败', 'failed': '失败', 'RUNNING': '运行中', 'running': '运行中'}.get(job.status|string, '未知') }}</span></td>
+                <td data-label="处理总数" class="num">{{ job.total_count if job.total_count is defined else (job.success_count + job.failure_count + job.skipped_count + job.fallback_count) }}</td>
+                <td data-label="成功" class="num">{{ job.success_count }}</td>
+                <td data-label="失败" class="num">{{ job.failure_count }}</td>
+                <td data-label="跳过" class="num col-optional">{{ job.skipped_count }}</td>
+                <td data-label="回退" class="num col-optional">{{ job.fallback_count if job.fallback_count is defined else 0 }}</td>
+                <td data-label="模型" class="col-optional">{{ job.model or '—' }}</td>
+                <td data-label="开始时间" class="cell-time">{{ format_time(job.started_at) }}</td>
+                <td data-label="耗时" class="cell-time">{{ job.duration_seconds|string + ' 秒' if job.duration_seconds is defined else '—' }}</td>
+              </tr>
+              {% if job.error_summary %}
+                <tr class="tr-expand">
+                  <td colspan="11">
+                    <div class="expand-block">
+                      <h3>错误详情</h3>
+                      <div class="error-box">{{ job.error_summary }}</div>
+                    </div>
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

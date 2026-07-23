@@ -1,0 +1,233 @@
+cases:
+  # model_technology (10)
+  - id: model-01
+    title: 某公司发布新一代大模型
+    expected: model_technology
+  - id: model-02
+    title: 多模态模型开源，支持图文理解
+    expected: model_technology
+  - id: model-03
+    title: 新型推理模型发布技术报告
+    expected: model_technology
+  - id: model-04
+    title: 基础模型训练方法取得技术突破
+    expected: model_technology
+  - id: model-05
+    title: 开源模型新增长上下文窗口
+    expected: model_technology
+  - id: model-06
+    title: LLM Benchmark评测揭示推理性能
+    expected: model_technology
+  - id: model-07
+    title: 千亿参数规模语言模型完成训练
+    expected: model_technology
+  - id: model-08
+    title: 大模型推理框架正式开源
+    expected: model_technology
+  - id: model-09
+    title: 多模态算法研究成果发布
+    expected: model_technology
+  - id: model-10
+    title: 模型升级至V2.1，推理速度提升
+    expected: model_technology
+
+  # agent_product (10)
+  - id: agent-01
+    title: 智能体平台2.0正式上线
+    expected: agent_product
+  - id: agent-02
+    title: 全新Agent产品发布
+    expected: agent_product
+  - id: agent-03
+    title: 企业智能助手完成产品更新
+    expected: agent_product
+  - id: agent-04
+    title: 智能体工作流平台功能升级
+    expected: agent_product
+  - id: agent-05
+    title: AI开发者平台正式上线
+    expected: agent_product
+  - id: agent-06
+    title: Copilot智能助手新版本发布
+    expected: agent_product
+  - id: agent-07
+    title: 智能体SDK发布并开放下载
+    expected: agent_product
+  - id: agent-08
+    title: Agent平台3.0完成平台升级
+    expected: agent_product
+  - id: agent-09
+    title: 智能体产品新增知识库功能
+    expected: agent_product
+  - id: agent-10
+    title: 工作流平台推出新版AI助手
+    expected: agent_product
+
+  # enterprise_case (10)
+  - id: enterprise-01
+    title: 大模型在银行客服场景落地
+    expected: enterprise_case
+  - id: enterprise-02
+    title: AI医疗应用落地基层医院
+    expected: enterprise_case
+  - id: enterprise-03
+    title: 制造企业智能化解决方案落地
+    expected: enterprise_case
+  - id: enterprise-04
+    title: 大模型助力企业数字化转型
+    expected: enterprise_case
+  - id: enterprise-05
+    title: 智能客服应用案例详解
+    expected: enterprise_case
+  - id: enterprise-06
+    title: AI项目在生产业务正式投产
+    expected: enterprise_case
+  - id: enterprise-07
+    title: 零售客户案例：智能推荐带来降本增效
+    expected: enterprise_case
+  - id: enterprise-08
+    title: 人工智能赋能企业质量检测
+    expected: enterprise_case
+  - id: enterprise-09
+    title: 大模型行业应用进入能源场景
+    expected: enterprise_case
+  - id: enterprise-10
+    title: 物流智能调度项目上线
+    summary: 该业务场景实现应用落地
+    expected: enterprise_case
+
+  # award_case (10)
+  - id: award-01
+    title: 年度人工智能优秀案例名单公布
+    expected: award_case
+  - id: award-02
+    title: 某项目成功入选示范名单
+    expected: award_case
+  - id: award-03
+    title: 人工智能创新应用获奖名单公示
+    expected: award_case
+  - id: award-04
+    title: 典型案例名单正式发布
+    expected: award_case
+  - id: award-05
+    title: 案例征集结果公布
+    expected: award_case
+  - id: award-06
+    title: 年度评选结果揭晓，三家企业荣获奖项
+    expected: award_case
+  - id: award-07
+    title: 智能制造项目上榜优秀案例名单
+    expected: award_case
+  - id: award-08
+    title: 科技创新表彰名单公布
+    expected: award_case
+  - id: award-09
+    title: AI项目获得奖项并成功入选年度榜单
+    expected: award_case
+  - id: award-10
+    title: 示范应用公示结果发布
+    expected: award_case
+
+  # solicitation (10)
+  - id: solicitation-01
+    title: AI+交通专项案例征集启动
+    expected: solicitation
+  - id: solicitation-02
+    title: 技术规范参编单位征集启动
+    expected: solicitation
+  - id: solicitation-03
+    title: 关于开展人工智能项目申报工作的通知
+    expected: solicitation
+  - id: solicitation-04
+    title: 年度优秀成果参评通知
+    expected: solicitation
+  - id: solicitation-05
+    title: 创新应用案例征集通知
+    expected: solicitation
+  - id: solicitation-06
+    title: 科技奖推荐申报启动
+    expected: solicitation
+  - id: solicitation-07
+    title: 智能制造大赛报名启动
+    expected: solicitation
+  - id: solicitation-08
+    title: 发布年度项目申报指南
+    expected: solicitation
+  - id: solicitation-09
+    title: 组织申报行业示范项目
+    summary: 材料提交截止日期为8月30日
+    expected: solicitation
+  - id: solicitation-10
+    title: 关于征集标准参编单位的通知
+    expected: solicitation
+
+  # policy_industry (11, including source-default fallback)
+  - id: policy-01
+    title: 人工智能行业标准公开征求意见
+    expected: policy_industry
+  - id: policy-02
+    title: 国家人工智能发展规划正式发布
+    expected: unclassified
+    expected_ambiguous: true
+  - id: policy-03
+    title: 生成式人工智能管理办法施行
+    expected: policy_industry
+  - id: policy-04
+    title: AI技术标准与测试规范发布
+    expected: policy_industry
+  - id: policy-05
+    title: 人工智能产业白皮书发布
+    expected: policy_industry
+  - id: policy-06
+    title: 监管部门发布算法治理指导意见
+    expected: policy_industry
+  - id: policy-07
+    title: 智能体团体标准正式实施
+    expected: policy_industry
+  - id: policy-08
+    title: 人工智能行业报告分析产业趋势
+    expected: policy_industry
+  - id: policy-09
+    title: 数据安全行动计划公开发布
+    expected: policy_industry
+  - id: policy-10
+    title: 人工智能标准化工作政策解读
+    expected: policy_industry
+  - id: policy-11
+    title: 本周工作动态
+    source_default: policy_industry
+    expected: policy_industry
+
+  # unclassified and confusing boundaries (10)
+  - id: unknown-01
+    title: 公司发布年度工作简报
+    expected: unclassified
+  - id: unknown-02
+    title: 企业申报上市取得新进展
+    expected: unclassified
+  - id: unknown-03
+    title: 董事会会议顺利召开
+    expected: unclassified
+  - id: unknown-04
+    title: 办公地址变更公告
+    expected: unclassified
+  - id: unknown-05
+    title: 春季校园招聘正式开始
+    expected: unclassified
+  - id: unknown-06
+    title: 公司品牌活动圆满举行
+    expected: unclassified
+  - id: unknown-07
+    title: 本周市场行情回顾
+    expected: unclassified
+  - id: unknown-08
+    title: 合作伙伴签约仪式举行
+    expected: unclassified
+  - id: unknown-09
+    title: 发布最新消息
+    expected: unclassified
+  - id: unknown-10
+    title: 大模型
+    summary: 智能体平台上线
+    source_default: agent_product
+    expected: model_technology

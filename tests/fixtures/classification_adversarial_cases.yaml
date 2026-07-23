@@ -1,0 +1,417 @@
+# Independent labels fixed before the classifier was first run against this corpus.
+cases:
+  # model_technology (10)
+  - id: adv-model-01
+    title: 开源视觉语言模型完成新一轮预训练
+    expected: model_technology
+  - id: adv-model-02
+    title: 推理加速框架支持万亿参数模型
+    expected: model_technology
+  - id: adv-model-03
+    title: Agent 2.0背后的语言模型技术解析
+    expected: model_technology
+  - id: adv-model-04
+    title: 新模型参数配置指南发布
+    expected: model_technology
+  - id: adv-model-05
+    title: RAG检索增强算法取得新进展
+    expected: model_technology
+  - id: adv-model-06
+    title: AI+科学计算基础模型研究报告
+    expected: model_technology
+  - id: adv-model-07
+    title: GitHub Release v3.2 adds longer context for the LLM
+    expected: model_technology
+  - id: adv-model-08
+    title: Open-source multimodal LLM benchmark released
+    expected: model_technology
+  - id: adv-model-09
+    title: 新型大模型公布训练细节
+    summary: 文末回顾上一年度案例征集安排
+    expected: model_technology
+  - id: adv-model-10
+    title: 模型模型模型推理能力评测
+    expected: model_technology
+
+  # agent_product (10)
+  - id: adv-agent-01
+    title: 智能体大模型一体化平台上线
+    expected: agent_product
+  - id: adv-agent-02
+    title: 某银行上线大模型智能体
+    expected: agent_product
+  - id: adv-agent-03
+    title: 企业发布智能客服产品
+    expected: agent_product
+  - id: adv-agent-04
+    title: 知识库Agent新增多轮任务编排
+    expected: agent_product
+  - id: adv-agent-05
+    title: AI助手桌面版完成版本迭代
+    expected: agent_product
+  - id: adv-agent-06
+    title: 智能体开发套件SDK v1.8上线
+    expected: agent_product
+  - id: adv-agent-07
+    title: Agent workflow platform v2.0 is now live
+    expected: agent_product
+  - id: adv-agent-08
+    title: Copilot product update adds enterprise search
+    expected: agent_product
+  - id: adv-agent-09
+    title: 工作流平台推出Agent 2.0与RAG组件
+    expected: agent_product
+  - id: adv-agent-10
+    title: 智能助手
+    expected: agent_product
+
+  # enterprise_case (10)
+  - id: adv-enterprise-01
+    title: 保险公司将大模型用于理赔审核
+    expected: enterprise_case
+  - id: adv-enterprise-02
+    title: 钢铁工厂智能质检系统正式投产
+    expected: enterprise_case
+  - id: adv-enterprise-03
+    title: 零售企业应用RAG提升门店问答效率
+    expected: enterprise_case
+  - id: adv-enterprise-04
+    title: 大模型在政务热线场景实现落地
+    expected: enterprise_case
+  - id: adv-enterprise-05
+    title: 航空公司智能客服实践案例复盘
+    expected: enterprise_case
+  - id: adv-enterprise-06
+    title: 制造业Agent应用带来降本增效
+    expected: enterprise_case
+  - id: adv-enterprise-07
+    title: 医院上线辅助诊疗模型
+    summary: 系统已在三个真实业务场景投入使用
+    expected: enterprise_case
+  - id: adv-enterprise-08
+    title: 企业大模型应用案例发布
+    expected: enterprise_case
+  - id: adv-enterprise-09
+    title: Bank deploys an LLM assistant for customer service
+    expected: enterprise_case
+  - id: adv-enterprise-10
+    title: 智慧港口调度解决方案完成落地验收
+    expected: enterprise_case
+
+  # award_case (15)
+  - id: adv-award-01
+    title: 案例征集结果正式公布
+    expected: award_case
+  - id: adv-award-02
+    title: 申报项目入选名单公示
+    expected: award_case
+  - id: adv-award-03
+    title: 征集活动圆满结束
+    summary: 十项成果入围终审名单
+    expected: award_case
+  - id: adv-award-04
+    title: 优秀案例评选结果出炉
+    expected: award_case
+  - id: adv-award-05
+    title: 参评项目公示
+    expected: award_case
+  - id: adv-award-06
+    title: 大模型智能体项目获奖
+    expected: award_case
+  - id: adv-award-07
+    title: 年度数字化成果榜单揭晓
+    expected: award_case
+  - id: adv-award-08
+    title: 三家单位荣获人工智能创新奖
+    expected: award_case
+  - id: adv-award-09
+    title: 示范项目最终入围结果公告
+    expected: award_case
+  - id: adv-award-10
+    title: AI Excellence Awards winners announced
+    expected: award_case
+  - id: adv-award-11
+    title: 获奖案例开始征集后续材料
+    expected: award_case
+  - id: adv-award-12
+    title: 模型员工获奖
+    expected: award_case
+  - id: adv-award-13
+    title: 智能体优秀实践入选年度案例
+    expected: award_case
+  - id: adv-award-14
+    title: 获奖名单名单名单正式确认
+    expected: award_case
+  - id: adv-award-15
+    title: 征集项目终审结果公示
+    summary: 本轮不再接受新的申报材料
+    expected: award_case
+
+  # solicitation (15)
+  - id: adv-solicitation-01
+    title: Agent平台优秀案例征集
+    expected: solicitation
+  - id: adv-solicitation-02
+    title: 发布会场地征集
+    summary: 面向园区公开征集可容纳千人的会场
+    expected: unclassified
+  - id: adv-solicitation-03
+    title: 人工智能创新成果开始接受申报
+    expected: solicitation
+  - id: adv-solicitation-04
+    title: 面向制造企业征集数字化实践
+    expected: solicitation
+  - id: adv-solicitation-05
+    title: 科技奖参评材料提交截止在即
+    expected: solicitation
+  - id: adv-solicitation-06
+    title: 现公开招募大模型标准参编单位
+    expected: solicitation
+  - id: adv-solicitation-07
+    title: AI应用大赛开放报名通道
+    expected: solicitation
+  - id: adv-solicitation-08
+    title: 推荐优秀智能体项目参与评选
+    expected: solicitation
+  - id: adv-solicitation-09
+    title: Call for AI case submissions opens
+    expected: solicitation
+  - id: adv-solicitation-10
+    title: Agent Challenge registration is now open
+    expected: solicitation
+  - id: adv-solicitation-11
+    title: 案例征集今日启动
+    summary: 附件列出去年获奖项目作为参考
+    expected: solicitation
+  - id: adv-solicitation-12
+    title: 申报
+    summary: 示范成果材料请于月底前提交
+    expected: solicitation
+  - id: adv-solicitation-13
+    title: 关于组织推荐行业标杆案例的函
+    summary: 符合条件的单位可在线填报
+    expected: solicitation
+  - id: adv-solicitation-14
+    title: 面向社会公开征集AI+教育解决方案
+    expected: solicitation
+  - id: adv-solicitation-15
+    title: 第三届算法竞赛参赛通知
+    expected: solicitation
+
+  # policy_industry (10)
+  - id: adv-policy-01
+    title: 研究院发布人工智能白皮书
+    expected: policy_industry
+  - id: adv-policy-02
+    title: 行业标准正式发布
+    expected: policy_industry
+  - id: adv-policy-03
+    title: 政策文件发布解读
+    expected: policy_industry
+  - id: adv-policy-04
+    title: 智能体技术标准征求意见
+    expected: policy_industry
+  - id: adv-policy-05
+    title: 征集意见结束
+    summary: 主管部门将根据反馈完善管理办法
+    expected: policy_industry
+  - id: adv-policy-06
+    title: 征集意见采纳情况公布
+    expected: policy_industry
+  - id: adv-policy-07
+    title: 生成式AI服务监管细则开始施行
+    expected: policy_industry
+  - id: adv-policy-08
+    title: Artificial Intelligence Safety Standard released
+    expected: policy_industry
+  - id: adv-policy-09
+    title: 人工智能产业发展年度报告
+    expected: policy_industry
+  - id: adv-policy-10
+    title: 团体技术规范修订说明
+    expected: policy_industry
+
+  # unclassified and deliberately insufficient/negated/conflicting evidence (30)
+  - id: adv-unknown-01
+    title: 公司申报上市
+    expected: unclassified
+  - id: adv-unknown-02
+    title: 项目申报材料已经提交
+    expected: unclassified
+  - id: adv-unknown-03
+    title: 申报系统升级
+    expected: unclassified
+  - id: adv-unknown-04
+    title: 征集令回顾
+    expected: unclassified
+  - id: adv-unknown-05
+    title: 招聘信息征集
+    expected: unclassified
+  - id: adv-unknown-06
+    title: 数据采集任务启动
+    expected: unclassified
+  - id: adv-unknown-07
+    title: 公司发布年度财务报告
+    expected: unclassified
+  - id: adv-unknown-08
+    title: 平台发布招聘计划
+    expected: unclassified
+  - id: adv-unknown-09
+    title: 暂不启动案例征集
+    expected: unclassified
+  - id: adv-unknown-10
+    title: 尚未公布获奖名单
+    expected: unclassified
+  - id: adv-unknown-11
+    title: 拟发布新一代模型
+    expected: unclassified
+  - id: adv-unknown-12
+    title: 计划申报示范项目
+    expected: unclassified
+  - id: adv-unknown-13
+    title: 不再接受申报材料
+    expected: unclassified
+  - id: adv-unknown-14
+    title: 获奖名单并未正式确认
+    expected: unclassified
+  - id: adv-unknown-15
+    title: 产品经理案例分享
+    expected: unclassified
+  - id: adv-unknown-16
+    title: 智能交通招聘公告
+    expected: unclassified
+  - id: adv-unknown-17
+    title: 企业标准化管理培训
+    expected: unclassified
+  - id: adv-unknown-18
+    title: 代理商产品更新通知
+    expected: unclassified
+  - id: adv-unknown-19
+    title: 会议
+    expected: unclassified
+  - id: adv-unknown-20
+    title: "!!!……？？？"
+    expected: unclassified
+  - id: adv-unknown-21
+    title: ""
+    expected: unclassified
+  - id: adv-unknown-22
+    title: Quarterly business update and hiring plan
+    expected: unclassified
+  - id: adv-unknown-23
+    title: AI+园区夏季开放日活动预告
+    expected: unclassified
+  - id: adv-unknown-24
+    title: 模型与智能体平台联合发布
+    expected: unclassified
+  - id: adv-unknown-25
+    title: 中心本月工作动态
+    source_default: policy_industry
+    expected: policy_industry
+  - id: adv-unknown-26
+    title: 新型推理模型公开技术细节
+    source_default: award_case
+    expected: model_technology
+  - id: adv-unknown-27
+    title: 大模型能力更新消息
+    summary: 智能体平台今天上线并开放使用
+    source_default: model_technology
+    expected: unclassified
+  - id: adv-unknown-28
+    title: 这一篇很长的部门内部活动纪要反复说明会议安排人员分工交通路线餐饮保障场地布置安全须知和签到方式但没有任何人工智能技术产品案例奖项征集政策标准或行业成果信息
+    expected: unclassified
+  - id: adv-unknown-29
+    title: 社区征集旧衣物捐赠点信息
+    expected: unclassified
+  - id: adv-unknown-30
+    title: 公司案例库完成资料归档
+    summary: 本次仅为内部知识整理，不涉及产品发布、项目评选或公开申报
+    expected: unclassified
+
+  # regression: model releases with "正式发布" (added round1-classification-quality)
+  - id: regx-model-01
+    title: Kimi-K2.5 — 正式发布
+    expected: model_technology
+  - id: regx-model-02
+    title: GLM-5.2 — 正式发布
+    expected: model_technology
+  - id: regx-model-03
+    title: DeepSeek-V4-Pro — 正式发布
+    expected: model_technology
+  - id: regx-model-04
+    title: 正式发布！文心5.0上线百度千帆
+    expected: model_technology
+  - id: regx-model-05
+    title: 模型正式发布并开源
+    expected: model_technology
+  # regression: model version upgrades
+  - id: regx-model-06
+    title: deepseek-chat 模型升级为 DeepSeek-V3.2
+    expected: model_technology
+  - id: regx-model-07
+    title: 模型迭代升级至v3.0，性能全面提升
+    expected: model_technology
+  # regression: model retirement
+  - id: regx-model-08
+    title: Kimi-K2.5 — 退役
+    expected: model_technology
+  - id: regx-model-09
+    title: MiniMax-M2.5 — 退役
+    expected: model_technology
+  # regression: API updates
+  - id: regx-model-10
+    title: API 接口更新
+    expected: model_technology
+  - id: regx-model-11
+    title: API 上线硬盘缓存技术
+    expected: model_technology
+  # regression: model open-source
+  - id: regx-model-12
+    title: GLM-5.2上线并开源：专注Coding与长程任务
+    expected: model_technology
+  - id: regx-model-13
+    title: GLM-5.1开源：一个独立工作8小时的模型
+    expected: model_technology
+
+  # regression: agent products (added round1-classification-quality)
+  - id: regx-agent-01
+    title: Kimi Playground 正式发布
+    expected: agent_product
+  - id: regx-agent-02
+    title: 智能体新产品正式发布
+    expected: agent_product
+  - id: regx-agent-03
+    title: 上线联网搜索功能
+    expected: agent_product
+
+  # regression: policy_industry (added round1-classification-quality)
+  - id: regx-policy-01
+    title: 专家解读｜构建数据安全治理新格局
+    expected: policy_industry
+  - id: regx-policy-02
+    title: 专家解读｜完善网络数据安全风险评估制度 提升网络数据安全治理能力
+    expected: policy_industry
+  - id: regx-policy-03
+    title: 启鸣达人首发《世界模型驱动的教育AGI白皮书》
+    expected: policy_industry
+  - id: regx-policy-04
+    title: 标准丨关于发布团体标准立项的公告
+    expected: policy_industry
+
+  # regression: enterprise_case (added round1-classification-quality)
+  - id: regx-enterprise-01
+    title: 当AI进入最依赖人的行业：一家四线城市康复机构利润增长40%
+    expected: enterprise_case
+
+  # regression: solicitation (added round1-classification-quality)
+  - id: regx-solicitation-01
+    title: 关于开展2026年度行业智能体应用实践案例征集活动的通知
+    expected: solicitation
+
+  # regression: unclassified / irrelevant (added round1-classification-quality)
+  - id: regx-unknown-01
+    title: 公司发布年度工作总结
+    expected: unclassified
+  - id: regx-unknown-02
+    title: 发布近期活动安排通知
+    expected: unclassified
