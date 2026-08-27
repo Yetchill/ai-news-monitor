@@ -157,7 +157,8 @@ def main() -> int:
         if not target.is_file():
             parser.error("--sha256-out accepts a file artifact, not a directory")
         args.sha256_out.parent.mkdir(parents=True, exist_ok=True)
-        args.sha256_out.write_text(f"{_sha256(target)}  {target.name}\n", encoding="utf-8")
+        with args.sha256_out.open("w", encoding="utf-8", newline="\n") as checksum_file:
+            checksum_file.write(f"{_sha256(target)}  {target.name}\n")
     inspected = "tracked release source inputs" if source_mode else "release artifact"
     print(f"{inspected} inspection passed: {target}")
     return 0
