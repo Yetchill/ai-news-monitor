@@ -70,10 +70,17 @@ def _tracked_release_files(root: Path) -> list[Path]:
 
 def _is_forbidden(path: Path) -> bool:
     lowered = path.name.casefold()
+    # certifi's public CA trust store is required for HTTPS in the frozen app;
+    # it is certificate data, not a private key or user credential.
+    trusted_ca_bundle = (
+        len(path.parts) >= 2 and path.parts[-2].casefold() == "certifi" and lowered == "cacert.pem"
+    )
     return (
         lowered.startswith(".env")
         or lowered.endswith(("-shm", "-wal"))
-        or any(lowered.endswith(suffix) for suffix in FORBIDDEN_SUFFIXES)
+        or (
+            not trusted_ca_bundle and any(lowered.endswith(suffix) for suffix in FORBIDDEN_SUFFIXES)
+        )
     )
 
 
@@ -84,7 +91,14 @@ def _contains_secret(path: Path, *, source_mode: bool = False) -> bool:
         content = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return False
-    patterns = SOURCE_SECRET_PATTERNS if source_mode else SECRET_PATTERNS
+    # Bundled migration modules are intentionally copied as data for Alembic.
+    # Treat Python as source even while inspecting onedir so expressions such
+    # as ``"api_key": str(row[...])`` are not mistaken for literal secrets.
+    patterns = (
+        SOURCE_SECRET_PATTERNS
+        if source_mode or path.suffix.casefold() == ".py"
+        else SECRET_PATTERNS
+    )
     return any(pattern.search(content) for pattern in patterns)
 
 
