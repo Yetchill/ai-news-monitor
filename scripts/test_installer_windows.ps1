@@ -50,8 +50,16 @@ $DesktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "AI 情�
 $StartMenuShortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\AI 情报助手\AI 情报助手.lnk"
 $UninstallRoot = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
 $UninstallKey = $null
+$PreexistingAppDataBackup = $null
 if (Test-Path $AppData) {
-    throw "installer lifecycle test requires a clean runner AppData directory: $AppData"
+    if ($env:GITHUB_ACTIONS -ne "true") {
+        throw "installer lifecycle test requires a clean AppData directory: $AppData"
+    }
+    $PreexistingAppDataBackup = Join-Path $env:LOCALAPPDATA `
+        ("AIIntelligenceMonitor-preexisting-" + [guid]::NewGuid().ToString("N"))
+    $existingNames = (Get-ChildItem $AppData -Force | Select-Object -ExpandProperty Name) -join ", "
+    Write-Host "Preserving pre-existing runner AppData entries: $existingNames"
+    Move-Item -Path $AppData -Destination $PreexistingAppDataBackup
 }
 
 $previousDataDir = $env:AIM_DATA_DIR
@@ -109,4 +117,14 @@ try {
     $env:AIM_DESKTOP_TEST_MODE = $previousTestMode
     $env:AIM_DESKTOP_SHUTDOWN_FILE = $previousShutdownFile
     $env:AIM_DESKTOP_OPEN_BROWSER = $previousBrowser
+    if ($null -ne $PreexistingAppDataBackup) {
+        if (Test-Path $AppData) {
+            $GeneratedAppData = Join-Path $env:LOCALAPPDATA `
+                ("AIIntelligenceMonitor-installer-test-" + [guid]::NewGuid().ToString("N"))
+            Move-Item -Path $AppData -Destination $GeneratedAppData
+            Write-Host "Retained generated installer test data at $GeneratedAppData"
+        }
+        Move-Item -Path $PreexistingAppDataBackup -Destination $AppData
+        Write-Host "Restored the pre-existing runner AppData directory"
+    }
 }
