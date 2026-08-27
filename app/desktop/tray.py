@@ -7,7 +7,7 @@ import logging
 import sys
 import threading
 from ctypes import wintypes
-from typing import Any
+from typing import Any, ClassVar
 
 from app.desktop.runtime import DesktopActions, Tray
 
@@ -170,56 +170,69 @@ class WindowsTray:
 class _Win32Api:
     """Late-bound ctypes declarations so importing this module stays portable."""
 
+    _type_lock: ClassVar[threading.Lock] = threading.Lock()
+    _cached_types: ClassVar[tuple[Any, Any, Any] | None] = None
+
     def __init__(self) -> None:
         windll: Any = getattr(ctypes, "windll")  # noqa: B009
         self.user32 = windll.user32
         self.shell32 = windll.shell32
         self.kernel32 = windll.kernel32
         lresult = ctypes.c_ssize_t
-        function_type: Any = getattr(ctypes, "WINFUNCTYPE")  # noqa: B009
-        self.window_proc_type: Any = function_type(
-            lresult,
-            wintypes.HWND,
-            wintypes.UINT,
-            wintypes.WPARAM,
-            wintypes.LPARAM,
-        )
+        with self._type_lock:
+            if self._cached_types is None:
+                function_type: Any = getattr(ctypes, "WINFUNCTYPE")  # noqa: B009
+                window_proc_type: Any = function_type(
+                    lresult,
+                    wintypes.HWND,
+                    wintypes.UINT,
+                    wintypes.WPARAM,
+                    wintypes.LPARAM,
+                )
 
-        class WindowClass(ctypes.Structure):
-            _fields_ = [
-                ("style", wintypes.UINT),
-                ("lpfnWndProc", self.window_proc_type),
-                ("cbClsExtra", ctypes.c_int),
-                ("cbWndExtra", ctypes.c_int),
-                ("hInstance", wintypes.HINSTANCE),
-                ("hIcon", wintypes.HICON),
-                ("hCursor", wintypes.HANDLE),
-                ("hbrBackground", wintypes.HBRUSH),
-                ("lpszMenuName", wintypes.LPCWSTR),
-                ("lpszClassName", wintypes.LPCWSTR),
-            ]
+                class WindowClass(ctypes.Structure):
+                    _fields_ = [
+                        ("style", wintypes.UINT),
+                        ("lpfnWndProc", window_proc_type),
+                        ("cbClsExtra", ctypes.c_int),
+                        ("cbWndExtra", ctypes.c_int),
+                        ("hInstance", wintypes.HINSTANCE),
+                        ("hIcon", wintypes.HICON),
+                        ("hCursor", wintypes.HANDLE),
+                        ("hbrBackground", wintypes.HBRUSH),
+                        ("lpszMenuName", wintypes.LPCWSTR),
+                        ("lpszClassName", wintypes.LPCWSTR),
+                    ]
 
-        class NotifyIconData(ctypes.Structure):
-            _fields_ = [
-                ("cbSize", wintypes.DWORD),
-                ("hWnd", wintypes.HWND),
-                ("uID", wintypes.UINT),
-                ("uFlags", wintypes.UINT),
-                ("uCallbackMessage", wintypes.UINT),
-                ("hIcon", wintypes.HICON),
-                ("szTip", wintypes.WCHAR * 128),
-                ("dwState", wintypes.DWORD),
-                ("dwStateMask", wintypes.DWORD),
-                ("szInfo", wintypes.WCHAR * 256),
-                ("uVersion", wintypes.UINT),
-                ("szInfoTitle", wintypes.WCHAR * 64),
-                ("dwInfoFlags", wintypes.DWORD),
-                ("guidItem", ctypes.c_byte * 16),
-                ("hBalloonIcon", wintypes.HICON),
-            ]
+                class NotifyIconData(ctypes.Structure):
+                    _fields_ = [
+                        ("cbSize", wintypes.DWORD),
+                        ("hWnd", wintypes.HWND),
+                        ("uID", wintypes.UINT),
+                        ("uFlags", wintypes.UINT),
+                        ("uCallbackMessage", wintypes.UINT),
+                        ("hIcon", wintypes.HICON),
+                        ("szTip", wintypes.WCHAR * 128),
+                        ("dwState", wintypes.DWORD),
+                        ("dwStateMask", wintypes.DWORD),
+                        ("szInfo", wintypes.WCHAR * 256),
+                        ("uVersion", wintypes.UINT),
+                        ("szInfoTitle", wintypes.WCHAR * 64),
+                        ("dwInfoFlags", wintypes.DWORD),
+                        ("guidItem", ctypes.c_byte * 16),
+                        ("hBalloonIcon", wintypes.HICON),
+                    ]
 
-        self.window_class_type: Any = WindowClass
-        self.notification_data_type: Any = NotifyIconData
+                type(self)._cached_types = (
+                    window_proc_type,
+                    WindowClass,
+                    NotifyIconData,
+                )
+        cached_types = self._cached_types
+        assert cached_types is not None
+        self.window_proc_type, self.window_class_type, self.notification_data_type = cached_types
+        WindowClass = self.window_class_type
+        NotifyIconData = self.notification_data_type
         self.kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
         self.kernel32.GetModuleHandleW.restype = wintypes.HINSTANCE
         self.user32.RegisterClassW.argtypes = [ctypes.POINTER(WindowClass)]

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import asyncio
+import ctypes
 import socket
 import sqlite3
 import threading
@@ -35,6 +36,7 @@ from app.desktop.runtime import (
     InstanceState,
     InstanceStateStore,
 )
+from app.desktop.tray import _Win32Api  # pyright: ignore[reportPrivateUsage]
 from app.services.single_instance import SingleInstanceError, SingleInstanceLock
 from app.storage.database import Database
 from app.storage.migrations.runtime import backup_sqlite_before_migration
@@ -271,6 +273,42 @@ def test_browser_environment_switch_can_disable_automatic_open(
     assert _environment_browser_enabled() is False
     monkeypatch.setenv("AIM_DESKTOP_OPEN_BROWSER", "1")
     assert _environment_browser_enabled() is True
+
+
+def test_win32_ctypes_structures_keep_one_process_wide_type_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeFunction:
+        argtypes: object = None
+        restype: object = None
+
+        def __call__(self, *_args: object) -> int:
+            return 1
+
+    class FakeLibrary:
+        def __init__(self) -> None:
+            self.functions: dict[str, FakeFunction] = {}
+
+        def __getattr__(self, name: str) -> FakeFunction:
+            return self.functions.setdefault(name, FakeFunction())
+
+    class FakeWindll:
+        user32 = FakeLibrary()
+        shell32 = FakeLibrary()
+        kernel32 = FakeLibrary()
+
+    monkeypatch.setattr(ctypes, "windll", FakeWindll(), raising=False)
+    monkeypatch.setattr(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE, raising=False)
+    previous = _Win32Api._cached_types
+    _Win32Api._cached_types = None
+    try:
+        first = _Win32Api()
+        second = _Win32Api()
+        assert first.window_proc_type is second.window_proc_type
+        assert first.window_class_type is second.window_class_type
+        assert first.notification_data_type is second.notification_data_type
+    finally:
+        _Win32Api._cached_types = previous
 
 
 def test_instance_state_store_rejects_invalid_external_values(tmp_path: Path) -> None:
