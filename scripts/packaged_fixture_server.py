@@ -14,6 +14,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import cast
 
+FIXTURE_PUBLISHED_AT = format_datetime(
+    datetime(2026, 8, 27, 0, 0, tzinfo=UTC),
+    usegmt=True,
+)
+
 
 class FixtureState:
     def __init__(self, path: Path) -> None:
@@ -152,13 +157,12 @@ def handler_factory(state: FixtureState) -> type[BaseHTTPRequestHandler]:
 
 
 def _feed(port: int, *, include_beta: bool) -> bytes:
-    published = format_datetime(datetime.now(UTC), usegmt=True)
     items = [
         _rss_item(
             "PACKAGED_CRAWLER_ALPHA 人工智能产品正式发布",
             f"http://127.0.0.1:{port}/items/alpha",
             "本地 fixture 的第一条确定性资讯, 用于验证首次新增与后续去重。",
-            published,
+            FIXTURE_PUBLISHED_AT,
         )
     ]
     if include_beta:
@@ -167,7 +171,7 @@ def _feed(port: int, *, include_beta: bool) -> bytes:
                 "PACKAGED_CRAWLER_BETA 智能体平台正式上线",
                 f"http://127.0.0.1:{port}/items/beta",
                 "恢复后新增的第二条资讯, 用于验证跨轮次增量采集。",
-                published,
+                FIXTURE_PUBLISHED_AT,
             )
         )
     xml = (
