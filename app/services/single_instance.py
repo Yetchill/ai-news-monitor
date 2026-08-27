@@ -30,14 +30,10 @@ class SingleInstanceLock:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         handle = self.path.open("a+b")
         try:
-            handle.seek(0)
             if os.name == "nt":
                 import msvcrt
 
-                if handle.tell() == 0:
-                    handle.write(b"0")
-                    handle.flush()
-                handle.seek(0)
+                _ensure_lock_byte(handle)
                 msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
             else:
                 import fcntl
@@ -74,3 +70,13 @@ class SingleInstanceLock:
 
     def __exit__(self, *_args: object) -> None:
         self.release()
+
+
+def _ensure_lock_byte(handle: BinaryIO) -> None:
+    """Initialize the byte locked by msvcrt without growing an existing file."""
+
+    handle.seek(0, os.SEEK_END)
+    if handle.tell() == 0:
+        handle.write(b"0")
+        handle.flush()
+    handle.seek(0)

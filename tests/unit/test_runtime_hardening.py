@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import sqlite3
 import sys
@@ -32,7 +33,11 @@ from app.services.ai_operation_service import (
 )
 from app.services.background_tasks import BackgroundTaskManager
 from app.services.release_sanitization import create_sanitized_database_copy
-from app.services.single_instance import SingleInstanceError, SingleInstanceLock
+from app.services.single_instance import (
+    SingleInstanceError,
+    SingleInstanceLock,
+    _ensure_lock_byte,  # pyright: ignore[reportPrivateUsage]
+)
 from app.storage.database import Database
 from app.storage.migrations.runtime import current_and_head, ensure_database_current
 
@@ -50,8 +55,7 @@ async def test_provider_reuses_injected_client_for_multiple_requests() -> None:
                     {
                         "message": {
                             "content": (
-                                '{"category":"irrelevant","confidence":0.9,'
-                                '"reason":"弱关联"}'
+                                '{"category":"irrelevant","confidence":0.9,"reason":"弱关联"}'
                             )
                         }
                     }
@@ -93,8 +97,7 @@ async def test_provider_owned_client_is_created_once_and_closed(
                     {
                         "message": {
                             "content": (
-                                '{"category":"agent_product","confidence":0.9,'
-                                '"reason":"产品发布"}'
+                                '{"category":"agent_product","confidence":0.9,"reason":"产品发布"}'
                             )
                         }
                     }
@@ -106,9 +109,7 @@ async def test_provider_owned_client_is_created_once_and_closed(
             self.closed = True
 
     monkeypatch.setattr(provider_module.httpx, "AsyncClient", FakeClient)
-    provider = OpenAICompatibleProvider(
-        "https://example.com", "test-key", "test-model"
-    )
+    provider = OpenAICompatibleProvider("https://example.com", "test-key", "test-model")
 
     await provider.classify("智能体产品发布", None, "来源", None)
     await provider.classify("AI 助手上线", None, "来源", None)
@@ -227,6 +228,9 @@ def test_windows_data_path_and_settings_are_coherent(
 ) -> None:
     monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.delenv("AIM_DATA_DIR", raising=False)
+    monkeypatch.delenv("AIM_DATABASE_URL", raising=False)
+    monkeypatch.delenv("AIM_LOG_DIR", raising=False)
+    monkeypatch.delenv("AIM_OUTPUT_DIR", raising=False)
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
 
     expected = tmp_path / APP_DIRECTORY_NAME
@@ -284,3 +288,16 @@ def test_single_instance_lock_rejects_second_owner(tmp_path: Path) -> None:
         first.release()
     second.acquire()
     second.release()
+
+
+def test_windows_lock_byte_initialization_does_not_grow_existing_file() -> None:
+    empty = io.BytesIO()
+    _ensure_lock_byte(empty)
+    _ensure_lock_byte(empty)
+    assert empty.getvalue() == b"0"
+    assert empty.tell() == 0
+
+    existing = io.BytesIO(b"already-initialized")
+    _ensure_lock_byte(existing)
+    assert existing.getvalue() == b"already-initialized"
+    assert existing.tell() == 0

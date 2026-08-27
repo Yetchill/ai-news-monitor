@@ -1,0 +1,35 @@
+name: Live source check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  live-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Synchronize locked development environment
+        run: uv sync --frozen
+      - name: Run active sources through the pipeline twice and write report
+        run: >-
+          uv run --frozen python scripts/live_source_report.py
+          --output artifacts/live-source-report.json
+      - name: Upload live source report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-source-report
+          path: artifacts/live-source-report.json
+          if-no-files-found: error

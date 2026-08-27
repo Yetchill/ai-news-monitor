@@ -182,11 +182,16 @@ def create_app(
     source_url_guard: SourceUrlGuard | None = None,
     token_store: DiscoveryTokenStore | None = None,
     scheduler_clock: SchedulerClock | None = None,
+    acquire_instance_lock: bool = True,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     resolved_database = database or Database.from_settings(resolved_settings)
     owns_database = database is None
-    instance_lock = SingleInstanceLock(resolved_database.database_url) if owns_database else None
+    instance_lock = (
+        SingleInstanceLock(resolved_database.database_url)
+        if owns_database and acquire_instance_lock
+        else None
+    )
 
     services = WebServices.build(
         resolved_database,
@@ -230,6 +235,11 @@ def create_app(
     application.state.services = services
     application.mount("/static", StaticFiles(directory=WEB_ROOT / "static"), name="static")
     application.include_router(router)
+
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    application.add_api_route("/healthz", health, methods=["GET"], include_in_schema=False)
     _register_error_handlers(application, templates)
     return application
 

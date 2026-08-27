@@ -39,7 +39,24 @@
 - openpyxl、python-docx；
 - Pydantic Settings 与 YAML 配置。
 
-## 普通用户安装
+## Windows 安装（推荐）
+
+无需安装 Python、Git 或 uv。请从 [GitHub Releases](https://github.com/Yetchill/ai-news-monitor/releases)
+下载最新的 `AI-Intelligence-Monitor-Setup-<version>-x64.exe`，并运行安装程序。它是按当前用户安装的，
+不需要管理员权限；安装程序默认创建开始菜单和桌面快捷方式，任一入口均可启动。应用会在浏览器打开本机页面，桌面托盘
+图标可用于重新打开、立即更新、查看日志或退出。
+
+发布页同时提供 `SHA256SUMS.txt`。如需校验下载文件，在 PowerShell 运行：
+
+```powershell
+Get-FileHash .\AI-Intelligence-Monitor-Setup-<version>-x64.exe -Algorithm SHA256
+```
+
+将输出与 `SHA256SUMS.txt` 中同名文件的值比较。卸载程序只删除应用本身；本地数据库、日志和导出
+会保留在 `%LOCALAPPDATA%\AIIntelligenceMonitor`。详细人工验收步骤见
+[Windows 验收清单](docs/WINDOWS_ACCEPTANCE.md)。
+
+## 从源码安装
 
 安装 [Python 3.12](https://www.python.org/) 和 [uv](https://docs.astral.sh/uv/)，然后执行：
 

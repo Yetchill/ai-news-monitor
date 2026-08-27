@@ -29,6 +29,7 @@ htmlcov/
 *.sqlite3
 data/*.db*
 data/*.sqlite*
+data/*.lock
 logs/
 output/*
 !output/.gitkeep

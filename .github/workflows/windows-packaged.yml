@@ -1,0 +1,68 @@
+name: Windows packaged integration
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "app/**"
+      - "packaging/**"
+      - "scripts/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/windows-packaged.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "packaging/**"
+      - "scripts/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/windows-packaged.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  packaged-integration:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Synchronize locked development environment
+        run: uv sync --frozen
+      - name: Install Inno Setup compiler
+        shell: pwsh
+        run: choco install innosetup --no-progress --limit-output -y
+      - name: Build and inspect installer
+        shell: pwsh
+        run: .\scripts\package.ps1
+      - name: Run packaged desktop integration checks
+        shell: pwsh
+        run: .\scripts\test_packaged_windows.ps1 -ExerciseFeatureRoutes
+      - name: Exercise per-user install, uninstall, and data preservation
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem artifacts\AI-Intelligence-Monitor-Setup-*-x64.exe | Select-Object -First 1
+          if ($null -eq $installer) { throw "installer artifact missing" }
+          .\scripts\test_installer_windows.ps1 -InstallerPath $installer.FullName
+      - name: Upload checked release assets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts/
+          if-no-files-found: error
