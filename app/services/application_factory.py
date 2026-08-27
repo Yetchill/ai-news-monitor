@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from app.classifiers.rule_based import RuleBasedClassifier
 from app.collectors.registry import default_collector_registry
+from app.config import get_settings
 from app.exporters import ExcelExporter, WordExporter
 from app.fetchers.http import HttpFetcher
 from app.services.classification_service import ClassificationService
@@ -38,7 +39,11 @@ async def update_pipeline_context(
 
     classification = ClassificationService(RuleBasedClassifier.from_yaml(), uow_factory)
     schedule_settings = ScheduleSettingsService(uow_factory)
-    async with HttpFetcher() as fetcher, SafeHttpFetcher(SourceUrlGuard()) as user_source_fetcher:
+    settings = get_settings()
+    async with (
+        HttpFetcher(max_response_bytes=settings.http_max_response_bytes) as fetcher,
+        SafeHttpFetcher(SourceUrlGuard()) as user_source_fetcher,
+    ):
         yield pipeline_class(
             uow_factory=uow_factory,
             crawl_service=CrawlService(

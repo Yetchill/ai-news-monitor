@@ -89,6 +89,9 @@ async def test_fixed_corpus_accuracy_and_confusion_report() -> None:
     print(f"classification accuracy: {total_correct}/{len(cases)} = {accuracy:.2%}")
     for category in Category:
         expected_total = total_by_expected[category.value]
+        if expected_total == 0:
+            print(f"{category.value}: no fixed-corpus cases")
+            continue
         print(
             f"{category.value}: {correct_by_expected[category.value]}/{expected_total} "
             f"= {correct_by_expected[category.value] / expected_total:.2%}"

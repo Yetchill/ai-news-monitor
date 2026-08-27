@@ -14,7 +14,9 @@ from app.domain.enums import Category
 from app.utils.text import normalize_text
 
 CLASSIFIABLE_CATEGORIES = tuple(
-    category for category in Category if category is not Category.UNCLASSIFIED
+    category
+    for category in Category
+    if category not in {Category.IRRELEVANT, Category.UNCLASSIFIED}
 )
 _ROOT_KEYS = {"settings", "global_negative_phrases", "categories"}
 _SETTING_KEYS = {

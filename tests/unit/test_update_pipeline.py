@@ -527,7 +527,7 @@ async def test_content_change_creates_revision_with_only_changed_fields(
 ) -> None:
     source = _source("Feed", "https://example.com/feed")
     _add_sources(database, source)
-    published = datetime(2026, 7, 1, tzinfo=UTC)
+    published = datetime.now(UTC) - timedelta(days=2)
     backend = ScenarioFetcher()
     backend.responses[source.start_url] = [
         [_item("https://example.com/1", published_at=published, extra={"attachment": "a.pdf"})],
@@ -535,7 +535,7 @@ async def test_content_change_creates_revision_with_only_changed_fields(
             _item(
                 "https://example.com/1",
                 summary="更新后的申报材料说明",
-                published_at=datetime(2026, 7, 2),
+                published_at=(published + timedelta(days=1)).replace(tzinfo=None),
                 extra={"attachment": "b.pdf"},
             )
         ],

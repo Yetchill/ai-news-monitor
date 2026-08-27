@@ -1,6 +1,5 @@
 """Server-rendered HTML pages and POST-only manual operations."""
 
-import asyncio
 import re
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -8,7 +7,7 @@ from urllib.parse import quote, urlencode, urlsplit
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Form, Path, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from app.domain.enums import (
     Category,
@@ -536,18 +535,23 @@ async def activate_source(
 async def ai_page(request: Request) -> HTMLResponse:
     config = request.app.state.services.ai_settings.get_config()
     recent = request.app.state.services.ai_ops.get_recent_jobs(10)
+    active_job = request.app.state.services.ai_ops.get_active_job()
     return request.app.state.templates.TemplateResponse(
         request,
         "ai.html",
         {
             "config": config,
             "recent_jobs": recent,
+            "active_job_data": (
+                request.app.state.services.ai_ops.job_data(active_job)
+                if active_job is not None
+                else None
+            ),
+            "provider_configs": (request.app.state.services.ai_settings.list_provider_configs()),
             "saved": request.query_params.get("saved") == "1",
             "key_cleared": request.query_params.get("key_cleared") == "1",
             "test_result": request.query_params.get("test_result"),
             "test_ok": request.query_params.get("test_ok") == "1",
-            "classifier_running": request.query_params.get("classifying") == "1",
-            "summarizer_running": request.query_params.get("summarizing") == "1",
             "work_overview": request.app.state.services.data.ai_work_overview(),
         },
     )
@@ -565,9 +569,14 @@ async def save_ai_settings(request: Request) -> RedirectResponse:
         api_key=_form_str(form, "api_key", ""),
         timeout_seconds=_form_int(form, "timeout_seconds", 30),
         max_retries=_form_int(form, "max_retries", 1),
+        enabled=_form_str(form, "enabled", "true") == "true",
         classifier_mode=_form_str(form, "classifier_mode", "off"),
-        classifier_strategy=_form_str(form, "classifier_strategy", "hybrid"),
         summarizer_mode=_form_str(form, "summarizer_mode", "off"),
+        classification_provider=_form_str(form, "classification_provider", "deepseek"),
+        classification_model=_form_str(form, "classification_model", "deepseek-chat"),
+        summarization_provider=_form_str(form, "summarization_provider", "deepseek"),
+        summarization_model=_form_str(form, "summarization_model", "deepseek-chat"),
+        classification_batch_mode=_form_str(form, "classification_batch_mode", "smart"),
     )
     request.app.state.services.ai_settings.save(config)
     return RedirectResponse("/ai?saved=1", status_code=303)
@@ -575,64 +584,89 @@ async def save_ai_settings(request: Request) -> RedirectResponse:
 
 @router.post("/ai/clear-key", response_class=HTMLResponse)
 async def clear_ai_key(request: Request) -> RedirectResponse:
-    request.app.state.services.ai_settings.clear_key()
-    return RedirectResponse("/ai?key_cleared=1", status_code=303)
+    form = await request.form()
+    provider = _form_str(form, "provider", "deepseek")
+    request.app.state.services.ai_settings.clear_key(provider)
+    return RedirectResponse(f"/ai?key_cleared=1&provider={quote(provider)}", status_code=303)
+
+
+@router.get("/ai/providers/{provider}")
+async def get_ai_provider_config(request: Request, provider: str) -> JSONResponse:
+    from app.services.ai_settings_service import PROVIDER_DEFAULTS
+
+    if provider not in PROVIDER_DEFAULTS:
+        raise WebInputError("不支持的 AI 供应商。")
+    config = request.app.state.services.ai_settings.get_config(provider)
+    return JSONResponse(config.safe_provider_data())
 
 
 @router.post("/ai/test-connection", response_class=HTMLResponse)
-async def test_ai_connection(request: Request) -> RedirectResponse:
+async def test_ai_connection(request: Request) -> Response:
     from app.classifiers.providers import (
+        LLMAuthenticationError,
         LLMConfigError,
+        LLMModelError,
+        LLMNetworkError,
         LLMProviderError,
         LLMResponseError,
         LLMTimeoutError,
         OpenAICompatibleProvider,
     )
+    from app.services.ai_settings_service import provider_label
 
     form = await request.form()
+    provider_name = _form_str(form, "provider", "deepseek")
     test_key = _form_str(form, "api_key", "")
     if not test_key:
-        return RedirectResponse(
-            "/ai?test_result=" + quote("请填写 API Key 后再测试"), status_code=303
-        )
+        test_key = request.app.state.services.ai_settings.get_config(provider_name).api_key
+    model = _form_str(form, "model", "")
+    base_url = _form_str(form, "base_url", "")
+    label = provider_label(provider_name)
+    result_data: dict[str, object] = {
+        "ok": False,
+        "provider": provider_name,
+        "provider_label": label,
+        "model": model,
+        "latency_ms": None,
+    }
+    if not test_key:
+        result_data["message"] = "API Key 未配置"
+        return _connection_test_response(request, result_data)
     provider = OpenAICompatibleProvider(
-        base_url=_form_str(form, "base_url", "https://api.deepseek.com"),
+        base_url=base_url,
         api_key=test_key,
-        model=_form_str(form, "model", "deepseek-chat"),
-        timeout_seconds=_form_int(form, "timeout_seconds", 30),
+        model=model,
+        timeout_seconds=min(60, max(5, _form_int(form, "timeout_seconds", 30))),
     )
     try:
-        result = await provider.classify(
-            "这是一条测试标题，用于验证 AI 服务连接是否正常",  # noqa: RUF001
-            None,
-            "测试来源",
-            None,
+        tested = await provider.test_connection()
+        result_data.update(
+            ok=True,
+            latency_ms=tested.latency_ms,
+            message="连接可用 (连接成功)",
         )
-        message = (
-            f"连接成功! 模型返回分类: {result.category.value}, "
-            f"置信度: {result.confidence:.2f}"
-        )
-        ok = True
-    except LLMConfigError as exc:
-        message = f"配置错误: {sanitize_error(exc, limit=200)}"
-        ok = False
-    except LLMTimeoutError as exc:
-        message = f"连接超时: {sanitize_error(exc, limit=200)}"
-        ok = False
-    except LLMResponseError as exc:
-        message = f"响应无效: {sanitize_error(exc, limit=200)}"
-        ok = False
+    except LLMAuthenticationError:
+        result_data["message"] = "API Key 无效"
+    except LLMModelError:
+        result_data["message"] = "模型不存在或无权限"
+    except LLMTimeoutError:
+        result_data["message"] = "请求超时"
+    except LLMNetworkError:
+        result_data["message"] = "网络连接失败"
+    except LLMResponseError:
+        result_data["message"] = "返回格式异常"
+    except LLMConfigError:
+        result_data["message"] = "配置无效"
     except LLMProviderError as exc:
-        message = f"连接失败: {sanitize_error(exc, limit=200)}"
-        ok = False
-    return RedirectResponse(
-        f"/ai?test_result={quote(message)}&test_ok={'1' if ok else '0'}", status_code=303
-    )
+        safe_message = sanitize_error(exc, limit=100)
+        result_data["message"] = safe_message.replace(test_key, "[REDACTED]")
+    finally:
+        await provider.aclose()
+    return _connection_test_response(request, result_data)
 
 
 @router.post("/ai/classify", response_class=HTMLResponse)
 async def run_ai_classify(request: Request) -> RedirectResponse:
-
     form = await request.form()
     item_ids_str = _form_str(form, "item_ids", "")
     if item_ids_str:
@@ -640,12 +674,20 @@ async def run_ai_classify(request: Request) -> RedirectResponse:
     else:
         ids = []
 
-    # Fire and forget in background
-    if ids:
-        _fire(request.app.state.services.ai_ops.classify_batch(ids, trigger="manual"))
-    else:
-        _fire(request.app.state.services.ai_ops.classify_all_unclassified(trigger="manual"))
-    return RedirectResponse("/ai?classifying=1", status_code=303)
+    mode = _form_str(form, "classification_batch_mode", "smart")
+    reclassify = _form_str(form, "reclassify", "") == "true"
+    task, created = request.app.state.services.ai_ops.enqueue_classification(
+        ids or None,
+        trigger="manual",
+        mode=mode,
+        reclassify=reclassify,
+    )
+    if created:
+        request.app.state.services.background_tasks.start(
+            request.app.state.services.ai_ops.run_classification_task(task),
+            name=f"ai-classification-{task.job_id}",
+        )
+    return RedirectResponse(f"/ai?job_id={task.job_id}", status_code=303)
 
 
 @router.post("/ai/summarize", response_class=HTMLResponse)
@@ -653,14 +695,16 @@ async def run_ai_summarize(request: Request) -> RedirectResponse:
     form = await request.form()
     item_ids_str = _form_str(form, "item_ids", "")
     retry = _form_str(form, "retry", "") == "1"
-    if item_ids_str:
-        ids = _parse_ids(item_ids_str)
-        _fire(request.app.state.services.ai_ops.summarize_batch(
-            ids, trigger="manual", retry_failed_only=retry
-        ))
-    else:
-        _fire(request.app.state.services.ai_ops.summarize_all_unsummarized(trigger="manual"))
-    return RedirectResponse("/ai?summarizing=1", status_code=303)
+    ids = _parse_ids(item_ids_str) if item_ids_str else None
+    task, created = request.app.state.services.ai_ops.enqueue_summarization(
+        ids, trigger="manual", retry_failed_only=retry
+    )
+    if created:
+        request.app.state.services.background_tasks.start(
+            request.app.state.services.ai_ops.run_summarization_task(task),
+            name=f"ai-summarization-{task.job_id}",
+        )
+    return RedirectResponse(f"/ai?job_id={task.job_id}", status_code=303)
 
 
 @router.post("/items/{item_id}/ai-classify", response_class=HTMLResponse)
@@ -669,7 +713,14 @@ async def ai_classify_single(
     item_id: Annotated[int, Path(ge=1, le=MAX_DATABASE_ID)],
     return_to: Annotated[str, Form(max_length=2048)] = "/",
 ) -> RedirectResponse:
-    _fire(request.app.state.services.ai_ops.classify_single(item_id, trigger="manual"))
+    task, created = request.app.state.services.ai_ops.enqueue_classification(
+        [item_id], trigger="manual", mode=None, reclassify=False
+    )
+    if created:
+        request.app.state.services.background_tasks.start(
+            request.app.state.services.ai_ops.run_classification_task(task),
+            name=f"ai-classification-{task.job_id}",
+        )
     return RedirectResponse(_safe_return_to(return_to, default="/"), status_code=303)
 
 
@@ -682,7 +733,14 @@ async def ai_classify_batch(
     ids = _parse_ids(item_ids)
     if not ids:
         raise WebInputError("未选择任何资讯。")
-    _fire(request.app.state.services.ai_ops.classify_batch(ids, trigger="manual"))
+    task, created = request.app.state.services.ai_ops.enqueue_classification(
+        ids, trigger="manual", mode=None, reclassify=False
+    )
+    if created:
+        request.app.state.services.background_tasks.start(
+            request.app.state.services.ai_ops.run_classification_task(task),
+            name=f"ai-classification-{task.job_id}",
+        )
     return RedirectResponse(_safe_return_to(return_to, default="/"), status_code=303)
 
 
@@ -692,7 +750,14 @@ async def ai_summarize_single(
     item_id: Annotated[int, Path(ge=1, le=MAX_DATABASE_ID)],
     return_to: Annotated[str, Form(max_length=2048)] = "/",
 ) -> RedirectResponse:
-    _fire(request.app.state.services.ai_ops.summarize_single(item_id, trigger="manual"))
+    task, created = request.app.state.services.ai_ops.enqueue_summarization(
+        [item_id], trigger="manual", retry_failed_only=False
+    )
+    if created:
+        request.app.state.services.background_tasks.start(
+            request.app.state.services.ai_ops.run_summarization_task(task),
+            name=f"ai-summarization-{task.job_id}",
+        )
     return RedirectResponse(_safe_return_to(return_to, default="/"), status_code=303)
 
 
@@ -705,21 +770,51 @@ async def ai_summarize_batch(
     ids = _parse_ids(item_ids)
     if not ids:
         raise WebInputError("未选择任何资讯。")
-    _fire(request.app.state.services.ai_ops.summarize_batch(ids, trigger="manual"))
+    task, created = request.app.state.services.ai_ops.enqueue_summarization(
+        ids, trigger="manual", retry_failed_only=False
+    )
+    if created:
+        request.app.state.services.background_tasks.start(
+            request.app.state.services.ai_ops.run_summarization_task(task),
+            name=f"ai-summarization-{task.job_id}",
+        )
     return RedirectResponse(_safe_return_to(return_to, default="/"), status_code=303)
 
 
-
-def _fire(coro: object) -> None:
-    import logging
-
-    async def _wrap() -> None:
+@router.get("/ai/jobs/status")
+async def ai_job_status(request: Request) -> JSONResponse:
+    requested = request.query_params.get("job_id")
+    if requested:
         try:
-            await coro  # type: ignore[misc]
-        except Exception:
-            logging.getLogger(__name__).exception("AI background task failed")
+            job = request.app.state.services.ai_ops.get_job(int(requested))
+        except (ValueError, TypeError):
+            raise WebInputError("AI 任务编号无效。") from None
+    else:
+        job = request.app.state.services.ai_ops.get_active_job()
+    data = request.app.state.services.ai_ops.job_data(job) if job is not None else None
+    return JSONResponse(
+        {
+            "job": data,
+            "work_overview": {
+                "unclassified": request.app.state.services.data.ai_work_overview().unclassified,
+                "unsummarized": request.app.state.services.data.ai_work_overview().unsummarized,
+            },
+        }
+    )
 
-    asyncio.create_task(_wrap())  # noqa: RUF006
+
+def _connection_test_response(request: Request, data: dict[str, object]) -> Response:
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse(data, status_code=200)
+    latency = f"\n延迟: {data['latency_ms']} 毫秒" if data.get("latency_ms") is not None else ""
+    message = f"{data['message']}\n供应商: {data['provider_label']}\n模型: {data['model']}{latency}"
+    query = urlencode(
+        {
+            "test_result": message,
+            "test_ok": "1" if data.get("ok") else "0",
+        }
+    )
+    return RedirectResponse(f"/ai?{query}", status_code=303)
 
 
 def _update_response(request: Request, result: UpdateResult) -> HTMLResponse:
@@ -780,6 +875,7 @@ def _content_disposition(filename: str, ascii_filename: str) -> str:
 
 def _form_str(form: object, key: str, default: str = "") -> str:
     from fastapi.datastructures import FormData
+
     if not isinstance(form, FormData):
         return default
     val = form.get(key)
@@ -790,6 +886,7 @@ def _form_str(form: object, key: str, default: str = "") -> str:
 
 def _form_int(form: object, key: str, default: int) -> int:
     from fastapi.datastructures import FormData
+
     if not isinstance(form, FormData):
         return default
     val = form.get(key)

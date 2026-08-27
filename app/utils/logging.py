@@ -58,6 +58,7 @@ def configure_logging(settings: Settings | None = None) -> None:
     root.addHandler(_rotating_handler("error.log", resolved, level=logging.ERROR))
 
     crawler = logging.getLogger("app.crawler")
+    crawler.disabled = False
     crawler.handlers.clear()
     crawler.setLevel(level)
     crawler.propagate = False

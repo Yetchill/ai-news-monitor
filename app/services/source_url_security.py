@@ -19,6 +19,7 @@ from app.fetchers.errors import (
     ForbiddenFetchError,
     NotFoundFetchError,
     RateLimitFetchError,
+    ResponseTooLargeFetchError,
     ServerFetchError,
 )
 from app.fetchers.http import DEFAULT_USER_AGENT
@@ -38,10 +39,6 @@ Resolver = Callable[[str], Awaitable[Sequence[str]]]
 
 class SourceUrlSecurityError(ValueError):
     """A user-facing URL rejection that never includes local addressing details."""
-
-
-class ResponseTooLargeFetchError(FetchError):
-    """The response exceeded the onboarding byte limit."""
 
 
 async def resolve_public_addresses(hostname: str) -> Sequence[str]:
@@ -358,11 +355,7 @@ class SafeHttpFetcher:
                 if status >= 400:
                     raise FetchError(requested_url, f"网页返回 HTTP {status}, 无法用于预览。")
                 declared = response.headers.get("content-length")
-                if (
-                    declared
-                    and declared.isdecimal()
-                    and int(declared) > self._max_response_bytes
-                ):
+                if declared and declared.isdecimal() and int(declared) > self._max_response_bytes:
                     raise ResponseTooLargeFetchError(
                         requested_url, "网页响应内容超过预览大小限制。"
                     )

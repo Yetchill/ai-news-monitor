@@ -1365,6 +1365,56 @@ select {
   min-width: 0;
 }
 
+.ai-progress {
+  margin-bottom: var(--sp-4);
+}
+
+.ai-progress-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  margin: 0 0 var(--sp-4);
+}
+
+.ai-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 180ms ease;
+}
+
+.ai-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+}
+
+.ai-progress-grid dt {
+  color: var(--text-3);
+  font-size: var(--fs-tiny);
+}
+
+.ai-progress-grid dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.notice.is-loading {
+  border-left-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  white-space: pre-line;
+}
+
+#ai-test-result {
+  white-space: pre-line;
+}
+
 .settings-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
@@ -2050,6 +2100,10 @@ textarea:focus {
   .ai-layout,
   .settings-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ai-progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .data-table.table-cards > thead {

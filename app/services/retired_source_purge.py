@@ -8,7 +8,7 @@ from typing import cast
 
 from sqlalchemy.engine import make_url
 
-from app.config.settings import PROJECT_ROOT
+from app.config.paths import default_data_dir
 from app.domain.models import IntelligenceItem
 from app.services.item_normalization import INTERNAL_DISCOVERIES_KEY
 from app.storage.database import Database
@@ -16,7 +16,7 @@ from app.storage.repositories import RepositoryUnitOfWork
 from app.utils.url import canonicalize_url
 
 UnitOfWorkFactory = Callable[[], RepositoryUnitOfWork]
-FORMAL_DATABASE_PATH = (PROJECT_ROOT / "data" / "intelligence.db").resolve()
+FORMAL_DATABASE_PATH = (default_data_dir() / "intelligence.db").resolve()
 
 RETIRED_IDENTIFIERS: Mapping[str, frozenset[str]] = {
     "openai-news-rss": frozenset(
@@ -111,7 +111,7 @@ class RetiredSourcePurgeService:
         source_path = _sqlite_path(self._database)
         if source_path.resolve() == FORMAL_DATABASE_PATH:
             raise RetiredSourcePurgeError(
-                "refusing to purge the formal data/intelligence.db; use a verified copy"
+                "refusing to purge the active user database; use a verified copy"
             )
         if backup_path is None:
             raise RetiredSourcePurgeError("confirm requires an explicit backup path")

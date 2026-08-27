@@ -163,6 +163,7 @@ class IntelligenceItem(Base):
         UniqueConstraint("source_id", "fingerprint", name="uq_item_source_fingerprint"),
         Index("ix_items_category_discovered", "category", "discovered_at"),
         Index("ix_items_primary_type_discovered", "primary_type", "discovered_at"),
+        Index("ix_items_is_read", "is_read"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -396,14 +397,20 @@ class ItemReviewEvent(Base):
 
 
 class AISettings(Base):
-    """Singleton AI model configuration persisted in the local database."""
+    """Singleton AI workflow configuration persisted in the local database.
+
+    The legacy provider fields remain mapped for backwards-compatible migration
+    support. Provider credentials live exclusively in ``AIProviderSetting``.
+    """
 
     __tablename__ = "ai_settings"
     __table_args__ = (CheckConstraint("id = 1", name="ck_ai_settings_singleton"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
     provider: Mapped[str] = mapped_column(String(30), nullable=False, default="deepseek")
-    base_url: Mapped[str] = mapped_column(String(500), nullable=False, default="https://api.deepseek.com")
+    base_url: Mapped[str] = mapped_column(
+        String(500), nullable=False, default="https://api.deepseek.com"
+    )
     model: Mapped[str] = mapped_column(String(100), nullable=False, default="deepseek-chat")
     api_key: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
@@ -411,6 +418,39 @@ class AISettings(Base):
     classifier_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="off")
     classifier_strategy: Mapped[str] = mapped_column(String(20), nullable=False, default="hybrid")
     summarizer_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="off")
+    selected_provider: Mapped[str] = mapped_column(String(30), nullable=False, default="deepseek")
+    classification_provider: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="deepseek"
+    )
+    classification_model: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="deepseek-chat"
+    )
+    summarization_provider: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="deepseek"
+    )
+    summarization_model: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="deepseek-chat"
+    )
+    classification_batch_mode: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="smart"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
+
+class AIProviderSetting(Base):
+    """Independent credential and endpoint configuration for one provider."""
+
+    __tablename__ = "ai_provider_settings"
+
+    provider: Mapped[str] = mapped_column(String(30), primary_key=True)
+    base_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    api_key: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    max_retries: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )
@@ -430,7 +470,17 @@ class AIJob(Base):
     failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     skipped_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     fallback_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    processed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    current_batch: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_batches: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    provider: Mapped[str] = mapped_column(String(30), nullable=False, default="")
     model: Mapped[str] = mapped_column(String(100), nullable=False)
+    classification_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    request_signature: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    model_request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    parse_failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    split_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now

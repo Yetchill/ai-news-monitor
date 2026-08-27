@@ -17,13 +17,24 @@ from app.domain.models import Base
 class Database:
     """Own the SQLAlchemy engine and create short-lived sessions."""
 
-    def __init__(self, database_url: str | None = None, *, echo: bool = False) -> None:
+    def __init__(
+        self,
+        database_url: str | None = None,
+        *,
+        echo: bool = False,
+        sqlite_busy_timeout_ms: int = 10_000,
+    ) -> None:
         self.database_url = database_url or get_settings().database_url
+        self.sqlite_busy_timeout_ms = max(0, sqlite_busy_timeout_ms)
         self._ensure_sqlite_parent(self.database_url)
         connect_args = (
             # Python 3.12's modern SQLite transaction mode makes SELECT and
             # SAVEPOINT participate in the outer source transaction.
-            {"check_same_thread": False, "autocommit": False}
+            {
+                "check_same_thread": False,
+                "autocommit": False,
+                "timeout": self.sqlite_busy_timeout_ms / 1000,
+            }
             if self.database_url.startswith("sqlite")
             else {}
         )
@@ -34,7 +45,7 @@ class Database:
             connect_args=connect_args,
         )
         if self.database_url.startswith("sqlite"):
-            event.listen(self.engine, "connect", self._enable_sqlite_foreign_keys)
+            event.listen(self.engine, "connect", self._configure_sqlite_connection)
         self.session_factory = sessionmaker(
             bind=self.engine,
             class_=Session,
@@ -47,7 +58,10 @@ class Database:
         """Construct a database from application settings."""
 
         resolved = settings or get_settings()
-        return cls(resolved.database_url)
+        return cls(
+            resolved.database_url,
+            sqlite_busy_timeout_ms=resolved.sqlite_busy_timeout_ms,
+        )
 
     @contextmanager
     def session(self) -> Generator[Session]:
@@ -84,14 +98,17 @@ class Database:
             return
         Path(url.database).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
 
-    @staticmethod
-    def _enable_sqlite_foreign_keys(dbapi_connection: object, _connection_record: object) -> None:
+    def _configure_sqlite_connection(
+        self, dbapi_connection: object, _connection_record: object
+    ) -> None:
         connection = cast(SQLiteConnection, dbapi_connection)
         previous_autocommit = connection.autocommit
         connection.autocommit = True
         cursor = connection.cursor()
         try:
             cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute(f"PRAGMA busy_timeout={self.sqlite_busy_timeout_ms}")
+            cursor.execute("PRAGMA journal_mode=WAL")
         finally:
             cursor.close()
             connection.autocommit = previous_autocommit

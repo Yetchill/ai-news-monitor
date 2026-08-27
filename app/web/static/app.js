@@ -330,7 +330,7 @@
 
   /* ---------- AI 页面模式联动 ---------- */
   function bindAIModes() {
-    function bindMode(listId, extraId) {
+    function bindMode(listId) {
       var list = document.getElementById(listId);
       if (!list) return;
       list.addEventListener("change", function (e) {
@@ -339,22 +339,151 @@
         $all(".option-row", list).forEach(function (row) {
           row.classList.toggle("is-selected", row.querySelector("input").checked);
         });
-        if (extraId) {
-          var extra = document.getElementById(extraId);
-          if (extra) extra.hidden = radio.value !== "auto";
-        }
       });
     }
-    bindMode("classifier-mode", "classifier-strategy");
-    bindMode("summarizer-mode", null);
+    bindMode("classifier-mode");
+    bindMode("summarizer-mode");
+
+    var batchMode = document.getElementById("classification-batch-mode");
+    var runMode = document.getElementById("run-classification-mode");
+    if (batchMode && runMode) {
+      batchMode.addEventListener("change", function () { runMode.value = batchMode.value; });
+    }
+
+    var providerSelect = document.getElementById("ai-provider");
+    if (providerSelect) {
+      providerSelect.addEventListener("change", function () {
+        fetch("/ai/providers/" + encodeURIComponent(providerSelect.value), {
+          headers: { "Accept": "application/json" }
+        }).then(function (response) {
+          if (!response.ok) throw new Error("供应商配置加载失败");
+          return response.json();
+        }).then(function (data) {
+          $("#ai-base-url").value = data.base_url || "";
+          $("#ai-model").value = data.model || "";
+          $("#ai-timeout").value = data.timeout_seconds;
+          $("#ai-retries").value = data.max_retries;
+          $("#ai-enabled").checked = Boolean(data.enabled);
+          $("#ai-key").value = "";
+          $("#ai-key").placeholder = data.api_key_configured ? "已配置，留空表示不修改" : "未配置，输入后可先测试再保存";
+          $("#ai-key-help").textContent = data.api_key_configured ? "当前供应商已配置 Key" : "当前供应商未配置 Key";
+          $("#ai-key-status").textContent = data.api_key_configured ? "已配置" : "未配置";
+          $("#ai-key-status").className = "status " + (data.api_key_configured ? "status-ok" : "status-muted");
+          $("#ai-current-provider").textContent = data.provider_label;
+          $("#ai-clear-key").hidden = !data.api_key_configured;
+        }).catch(function () { toast("供应商配置加载失败"); });
+      });
+    }
 
     var testBtn = document.getElementById("ai-test");
-    if (testBtn) {
-      testBtn.addEventListener("click", function () {
+    var aiForm = document.getElementById("ai-form");
+    var testResult = document.getElementById("ai-test-result");
+    if (testBtn && aiForm && testResult) {
+      testBtn.addEventListener("click", function (event) {
+        event.preventDefault();
         testBtn.disabled = true;
-        testBtn.textContent = "正在测试…";
+        testBtn.setAttribute("aria-busy", "true");
+        testBtn.textContent = "正在测试连接…";
+        testResult.hidden = false;
+        testResult.className = "notice is-loading";
+        testResult.textContent = "正在测试连接…";
+        var body = new URLSearchParams(new FormData(aiForm));
+        fetch("/ai/test-connection", {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: body.toString()
+        }).then(function (response) {
+          return response.json();
+        }).then(function (data) {
+          testResult.className = "notice " + (data.ok ? "is-success" : "is-error");
+          var lines = [
+            data.ok ? "连接可用" : "连接不可用",
+            "供应商：" + data.provider_label,
+            "模型：" + data.model
+          ];
+          if (data.latency_ms !== null && data.latency_ms !== undefined) {
+            lines.push("延迟：" + data.latency_ms + " 毫秒");
+          }
+          if (!data.ok) lines.push("原因：" + data.message);
+          testResult.textContent = lines.join("\n");
+        }).catch(function () {
+          testResult.className = "notice is-error";
+          testResult.textContent = "连接不可用\n原因：网络连接失败";
+        }).finally(function () {
+          testBtn.disabled = false;
+          testBtn.removeAttribute("aria-busy");
+          testBtn.textContent = "测试连接";
+        });
       });
     }
+
+    $all("#ai-classify-form, form[action='/ai/summarize']").forEach(function (form) {
+      form.addEventListener("submit", function () {
+        var button = form.querySelector("button[type='submit']");
+        if (button) {
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          button.textContent = "正在启动…";
+        }
+      });
+    });
+  }
+
+  function bindAIJobProgress() {
+    var panel = document.getElementById("ai-job-progress");
+    if (!panel) return;
+    var params = new URLSearchParams(window.location.search);
+    var jobId = params.get("job_id");
+    var shouldPoll = !panel.hidden || Boolean(jobId);
+    if (!shouldPoll) return;
+
+    function render(data) {
+      if (!data || !data.job) return false;
+      var job = data.job;
+      panel.hidden = false;
+      $("#ai-progress-title").textContent = (job.job_type === "classification" ? "AI分类" : "AI总结") + "中：" + job.processed_count + " / " + job.total_count;
+      $("#ai-progress-status").textContent = job.status_label;
+      $("#ai-progress-batch").textContent = "第 " + job.current_batch + " / " + job.total_batches + " 批";
+      $("#ai-progress-provider").textContent = job.provider_label;
+      $("#ai-progress-model").textContent = job.model;
+      $("#ai-progress-percent").textContent = job.percentage + "%";
+      $("#ai-progress-fill").style.width = job.percentage + "%";
+      $("#ai-progress-success").textContent = job.success_count;
+      $("#ai-progress-failure").textContent = job.failure_count;
+      $("#ai-progress-skipped").textContent = job.skipped_count;
+      var error = $("#ai-progress-error");
+      error.hidden = !job.error_summary;
+      error.textContent = job.error_summary || "";
+      if (data.work_overview) {
+        if ($("#ai-unclassified-count")) $("#ai-unclassified-count").textContent = data.work_overview.unclassified;
+        if ($("#ai-unsummarized-count")) $("#ai-unsummarized-count").textContent = data.work_overview.unsummarized;
+      }
+      return job.status === "pending" || job.status === "running";
+    }
+
+    function poll() {
+      var suffix = jobId ? "?job_id=" + encodeURIComponent(jobId) : "";
+      fetch("/ai/jobs/status" + suffix, { headers: { "Accept": "application/json" } })
+        .then(function (response) {
+          if (!response.ok) throw new Error("任务状态读取失败");
+          return response.json();
+        })
+        .then(function (data) {
+          if (render(data)) {
+            window.setTimeout(poll, 1000);
+          } else {
+            $all("#ai-run-classify, #ai-run-summarize").forEach(function (button) {
+              button.disabled = false;
+              button.removeAttribute("aria-busy");
+            });
+          }
+        })
+        .catch(function () { window.setTimeout(poll, 2000); });
+    }
+    poll();
   }
 
   /* ---------- 设置页开关联动 ---------- */
@@ -448,7 +577,9 @@
     var btn = document.getElementById("ai-clear-key");
     if (!btn) return;
     btn.addEventListener("click", function (e) {
-      if (!window.confirm("确认清除已保存的 API Key？清除后 AI 分类与总结将不可用。")) {
+      var provider = document.getElementById("ai-current-provider");
+      var label = provider ? provider.textContent : "当前供应商";
+      if (!window.confirm("确认只清除 " + label + " 的 API Key？其他供应商不受影响。")) {
         e.preventDefault();
       }
     });
@@ -462,6 +593,7 @@
     bindSelection();
     bindBatchActions();
     bindAIModes();
+    bindAIJobProgress();
     bindSettingsSwitch();
     bindExpandableRows();
     bindSourceErrToggle();

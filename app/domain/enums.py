@@ -18,6 +18,7 @@ class Category(StrEnum):
     AWARD_CASE = "award_case"
     SOLICITATION = "solicitation"
     POLICY_INDUSTRY = "policy_industry"
+    IRRELEVANT = "irrelevant"
     UNCLASSIFIED = "unclassified"
 
 

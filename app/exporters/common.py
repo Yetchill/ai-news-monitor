@@ -14,6 +14,7 @@ CATEGORY_LABELS = {
     Category.AWARD_CASE: "奖项与优秀案例",
     Category.SOLICITATION: "征集与申报",
     Category.POLICY_INDUSTRY: "政策、标准与行业",
+    Category.IRRELEVANT: "非目标情报",
     Category.UNCLASSIFIED: "待分类",
 }
 CATEGORY_ORDER = tuple(CATEGORY_LABELS)
