@@ -128,6 +128,7 @@ $scheduled = $null
 $restarted = $null
 $fixtureServer = $null
 $fixtureBaseUrl = $null
+$primaryFailure = $false
 $portBlocker = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 8000)
 
 try {
@@ -228,6 +229,20 @@ try {
         --xlsx $ExcelPath --docx $WordPath
     if ($LASTEXITCODE -ne 0) { throw "重启后持久化或任务终态验证失败" }
     Write-Host "Windows packaged crawler/scheduler/AI/export/restart integration passed: $($ready.Url)"
+} catch {
+    $primaryFailure = $true
+    Write-Host "packaged integration primary failure: $($_.Exception.ToString())"
+    foreach ($diagnostic in @(
+        (Join-Path $TestData "logs/application.log"),
+        $FixtureStdout,
+        $FixtureStderr
+    )) {
+        if (Test-Path $diagnostic) {
+            Write-Host "----- diagnostic: $diagnostic -----"
+            Get-Content $diagnostic -Tail 300
+        }
+    }
+    throw
 } finally {
     $cleanupFailure = $false
     foreach ($process in @($bootstrap, $second, $scheduled, $restarted)) {
@@ -261,5 +276,11 @@ try {
     $env:AIM_DESKTOP_SHUTDOWN_FILE = $previousShutdownFile
     $env:AIM_DESKTOP_TEST_SCHEDULER_INTERVAL_SECONDS = $previousTestInterval
     if (Test-Path $TestData) { Remove-Item -Recurse -Force $TestData }
-    if ($cleanupFailure) { throw "cleanup required a forced process termination" }
+    if ($cleanupFailure) {
+        if ($primaryFailure) {
+            Write-Warning "cleanup required forced process termination after the primary failure"
+        } else {
+            throw "cleanup required a forced process termination"
+        }
+    }
 }

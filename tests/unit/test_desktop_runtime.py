@@ -23,6 +23,7 @@ import app.storage.migrations.runtime as migration_runtime
 from app.config.settings import Settings
 from app.desktop.__main__ import (
     _environment_browser_enabled,  # pyright: ignore[reportPrivateUsage]
+    _test_mode_enabled,  # pyright: ignore[reportPrivateUsage]
     _test_scheduler_clock_from_environment,  # pyright: ignore[reportPrivateUsage]
     _test_shutdown_file_from_environment,  # pyright: ignore[reportPrivateUsage]
 )
@@ -231,6 +232,7 @@ def test_shutdown_file_environment_requires_explicit_test_guard(
     assert _test_shutdown_file_from_environment() is None
 
     monkeypatch.setenv("AIM_DESKTOP_TEST_MODE", "1")
+    assert _test_mode_enabled() is True
     assert _test_shutdown_file_from_environment() == shutdown_file
 
 

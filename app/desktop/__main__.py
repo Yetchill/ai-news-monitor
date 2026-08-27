@@ -45,7 +45,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         log_path = (
             settings.log_dir / "application.log" if settings is not None else "application.log"
         )
-        show_startup_error(f"应用无法启动: {exc}\n\n详细日志: {log_path}")
+        message = f"应用无法启动: {exc}\n\n详细日志: {log_path}"
+        # A modal dialog would hide the original failure and block a headless
+        # packaged test. Production startup still shows the Chinese notice.
+        if not _test_mode_enabled():
+            show_startup_error(message)
         return 1
     return 0
 
@@ -58,7 +62,7 @@ def _environment_browser_enabled() -> bool:
 def _test_shutdown_file_from_environment() -> Path | None:
     """Enable packaged smoke-test shutdown only under an explicit test guard."""
 
-    if os.environ.get("AIM_DESKTOP_TEST_MODE", "").strip() != "1":
+    if not _test_mode_enabled():
         return None
     value = os.environ.get("AIM_DESKTOP_SHUTDOWN_FILE", "").strip()
     return Path(value).expanduser().resolve() if value else None
@@ -67,7 +71,7 @@ def _test_shutdown_file_from_environment() -> Path | None:
 def _test_scheduler_clock_from_environment() -> PackagedTestSchedulerClock | None:
     """Accelerate persisted schedules only for an explicitly guarded packaged test."""
 
-    if os.environ.get("AIM_DESKTOP_TEST_MODE", "").strip() != "1":
+    if not _test_mode_enabled():
         return None
     value = os.environ.get("AIM_DESKTOP_TEST_SCHEDULER_INTERVAL_SECONDS", "").strip()
     if not value:
@@ -77,6 +81,10 @@ def _test_scheduler_clock_from_environment() -> PackagedTestSchedulerClock | Non
     except ValueError as exc:
         raise ValueError("AIM_DESKTOP_TEST_SCHEDULER_INTERVAL_SECONDS 必须是数字。") from exc
     return PackagedTestSchedulerClock(interval)
+
+
+def _test_mode_enabled() -> bool:
+    return os.environ.get("AIM_DESKTOP_TEST_MODE", "").strip() == "1"
 
 
 if __name__ == "__main__":
