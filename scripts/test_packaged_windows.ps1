@@ -171,9 +171,9 @@ try {
     $env:AIM_DESKTOP_SHUTDOWN_FILE = $ShutdownFile
     $scheduled = Start-Process -FilePath $Executable -PassThru
     $ready = Wait-DesktopReady -Process $scheduled -StateFile $StateFile
-    $home = Invoke-WebRequest -Uri $ready.Url -UseBasicParsing -TimeoutSec 5
+    $homeResponse = Invoke-WebRequest -Uri $ready.Url -UseBasicParsing -TimeoutSec 5
     $static = Invoke-WebRequest -Uri "$($ready.Url)static/styles.css" -UseBasicParsing -TimeoutSec 5
-    if ($home.Content -notmatch "<html" -or $static.Content.Length -lt 100) {
+    if ($homeResponse.Content -notmatch "<html" -or $static.Content.Length -lt 100) {
         throw "关键页面或静态资源没有由打包程序提供"
     }
     if ($ExerciseFeatureRoutes) {
