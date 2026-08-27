@@ -574,6 +574,7 @@ class ScheduleSettingsRepository(BaseRepository[ScheduleSettings]):
                 schedule_hour=entity.schedule_hour,
                 schedule_minute=entity.schedule_minute,
                 schedule_days_mask=entity.schedule_days_mask,
+                initial_fetch_days=entity.initial_fetch_days,
                 timezone=entity.timezone,
                 updated_at=entity.updated_at,
                 last_scheduled_trigger_at=entity.last_scheduled_trigger_at,

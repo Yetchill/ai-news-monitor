@@ -1,0 +1,95 @@
+name: Full release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing v<version> tag to publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - id: release
+        name: Check tag matches the canonical project version
+        shell: bash
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          version="$(python -c 'import tomllib; from pathlib import Path; print(tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])')"
+          test "$tag" = "v$version"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+  level1:
+    needs: validate-version
+    uses: ./.github/workflows/ci-level1.yml
+    with:
+      ref: ${{ needs.validate-version.outputs.tag }}
+  deterministic-release-validation:
+    needs: validate-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-version.outputs.tag }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Synchronize locked development environment
+        run: uv sync --frozen
+      - name: Run deterministic crawler, scheduler, and resource soak
+        env:
+          AIM_RELEASE_VALIDATION_REPORT: artifacts/release-validation.json
+        run: >-
+          uv run --frozen python -m pytest
+          tests/unit/test_release_stability.py
+      - name: Upload deterministic release validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-validation
+          path: artifacts/release-validation.json
+          if-no-files-found: error
+  windows-package:
+    needs: [validate-version, level1, deterministic-release-validation]
+    uses: ./.github/workflows/windows-packaged.yml
+    with:
+      ref: ${{ needs.validate-version.outputs.tag }}
+  publish:
+    needs: [validate-version, windows-package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-version.outputs.tag }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-validation
+          path: artifacts
+      - name: Publish checked Windows installer and checksum
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate-version.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: true
+          files: artifacts/*

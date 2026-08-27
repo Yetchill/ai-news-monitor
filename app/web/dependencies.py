@@ -1,6 +1,5 @@
 """Application dependencies and process-local update exclusion."""
 
-import asyncio
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -13,6 +12,7 @@ from app.domain.update import SourcePreviewResult, UpdateResult
 from app.services.ai_operation_service import AIOperationService
 from app.services.ai_settings_service import AISettingsService
 from app.services.application_factory import build_export_service, update_pipeline_context
+from app.services.background_tasks import BackgroundTaskManager
 from app.services.export_service import ExportService
 from app.services.schedule_settings_service import ScheduleSettingsService
 from app.services.scheduler_service import SchedulerClock, SchedulerService
@@ -42,11 +42,13 @@ class WebUpdateService:
         database: Database,
         pipeline_context_factory: PipelineContextFactory = update_pipeline_context,
         update_lock: UpdateLock | None = None,
+        background_tasks: BackgroundTaskManager | None = None,
     ) -> None:
         self._execution = UpdateExecutionService(
             database, pipeline_context_factory, update_lock or UpdateLock()
         )
         self._database = database
+        self._background_tasks = background_tasks or BackgroundTaskManager()
 
     async def update(self, *, source_id: int | None = None) -> UpdateResult:
         result = await self._execution.update(
@@ -54,12 +56,14 @@ class WebUpdateService:
             source_id=source_id,
             formal_only=False,
         )
-        asyncio.create_task(self._run_auto_ai_if_enabled())  # noqa: RUF006
+        self._background_tasks.start(
+            self._run_auto_ai_if_enabled(), name="automatic-ai-after-update"
+        )
         return result
 
     async def _run_auto_ai_if_enabled(self) -> None:
+        ops: AIOperationService | None = None
         try:
-            from app.services.ai_operation_service import AIOperationService
             from app.services.ai_settings_service import AISettingsService
 
             settings = AISettingsService(self._database)
@@ -73,6 +77,9 @@ class WebUpdateService:
                 await ops.summarize_all_unsummarized(trigger="auto")
         except Exception:
             logging.getLogger(__name__).exception("Auto AI failed during update")
+        finally:
+            if ops is not None:
+                await ops.aclose()
 
     async def preview(self, source_id: int) -> SourcePreviewResult:
         return await self._execution.preview(source_id)
@@ -80,7 +87,12 @@ class WebUpdateService:
     async def try_scheduled_update(
         self, *, before_update: Callable[[], None] | None = None
     ) -> UpdateResult | None:
-        return await self._execution.try_scheduled_update(before_update=before_update)
+        result = await self._execution.try_scheduled_update(before_update=before_update)
+        if result is not None:
+            self._background_tasks.start(
+                self._run_auto_ai_if_enabled(), name="automatic-ai-after-scheduled-update"
+            )
+        return result
 
 
 @dataclass(slots=True)
@@ -98,6 +110,7 @@ class WebServices:
     token_store: DiscoveryTokenStore
     ai_settings: AISettingsService
     ai_ops: AIOperationService
+    background_tasks: BackgroundTaskManager
     _owned_source_fetcher: SafeHttpFetcher | None = None
 
     @classmethod
@@ -123,7 +136,13 @@ class WebServices:
             default_collector_registry(), fetcher, RuleBasedClassifier.from_yaml()
         )
         update_lock = UpdateLock()
-        updates = WebUpdateService(database, pipeline_context_factory, update_lock)
+        background_tasks = BackgroundTaskManager()
+        updates = WebUpdateService(
+            database,
+            pipeline_context_factory,
+            update_lock,
+            background_tasks,
+        )
         schedule_settings = ScheduleSettingsService(uow_factory)
         scheduler = SchedulerService(
             schedule_settings,
@@ -146,11 +165,14 @@ class WebServices:
             token_store=store,
             ai_settings=AISettingsService(database),
             ai_ops=AIOperationService(database),
+            background_tasks=background_tasks,
             _owned_source_fetcher=owned_fetcher,
         )
 
     async def aclose(self) -> None:
         await self.scheduler.stop()
+        await self.background_tasks.aclose()
+        await self.ai_ops.aclose()
         if self._owned_source_fetcher is not None:
             await self._owned_source_fetcher.aclose()
 

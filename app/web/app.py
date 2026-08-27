@@ -5,8 +5,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import cast
 
-from alembic.migration import MigrationContext
-from alembic.script import ScriptDirectory
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
@@ -17,7 +15,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.classifiers.manual import ManualCategoryError
 from app.config import Settings, get_settings
-from app.config.settings import PROJECT_ROOT
 from app.domain.collection import Fetcher
 from app.domain.enums import (
     Category,
@@ -41,6 +38,7 @@ from app.services.application_factory import update_pipeline_context
 from app.services.error_sanitization import sanitize_error
 from app.services.schedule_settings_service import ScheduleValidationError
 from app.services.scheduler_service import SchedulerClock, SchedulerReloadError
+from app.services.single_instance import SingleInstanceLock
 from app.services.source_discovery import DiscoveryTokenError, DiscoveryTokenStore
 from app.services.source_lifecycle_service import SourceActivationError
 from app.services.source_management import (
@@ -56,6 +54,7 @@ from app.services.update_pipeline import (
 )
 from app.services.web_data_service import EntityNotFoundError, SourceStateError
 from app.storage.database import Database
+from app.storage.migrations.runtime import current_and_head, ensure_database_current
 from app.utils.logging import configure_logging
 from app.web.dependencies import PipelineContextFactory, UpdateInProgressError, WebServices
 from app.web.routes import router
@@ -69,6 +68,7 @@ CATEGORY_LABELS = {
     Category.AWARD_CASE: "获奖与优秀案例",
     Category.SOLICITATION: "奖项与成果征集",
     Category.POLICY_INDUSTRY: "政策、标准与行业动态",
+    Category.IRRELEVANT: "非目标情报",
     Category.UNCLASSIFIED: "待分类",
 }
 VERIFICATION_LABELS = {
@@ -182,10 +182,16 @@ def create_app(
     source_url_guard: SourceUrlGuard | None = None,
     token_store: DiscoveryTokenStore | None = None,
     scheduler_clock: SchedulerClock | None = None,
+    acquire_instance_lock: bool = True,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     resolved_database = database or Database.from_settings(resolved_settings)
     owns_database = database is None
+    instance_lock = (
+        SingleInstanceLock(resolved_database.database_url)
+        if owns_database and acquire_instance_lock
+        else None
+    )
 
     services = WebServices.build(
         resolved_database,
@@ -200,8 +206,12 @@ def create_app(
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         try:
             configure_logging(resolved_settings)
+            if instance_lock is not None:
+                instance_lock.acquire()
             if enforce_migrations:
+                ensure_database_current(resolved_database)
                 require_current_migration(resolved_database)
+            services.ai_ops.recover_interrupted_jobs()
             await services.scheduler.start()
             yield
         finally:
@@ -210,6 +220,8 @@ def create_app(
             finally:
                 if owns_database:
                     resolved_database.dispose()
+                if instance_lock is not None:
+                    instance_lock.release()
 
     application = FastAPI(
         title=resolved_settings.app_name,
@@ -223,28 +235,24 @@ def create_app(
     application.state.services = services
     application.mount("/static", StaticFiles(directory=WEB_ROOT / "static"), name="static")
     application.include_router(router)
+
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    application.add_api_route("/healthz", health, methods=["GET"], include_in_schema=False)
     _register_error_handlers(application, templates)
     return application
 
 
 def require_current_migration(database: Database) -> None:
-    """Refuse startup when the configured database is not at Alembic head."""
+    """Compatibility check retained for diagnostics and existing callers."""
 
-    script = ScriptDirectory.from_config(_alembic_config())
-    expected = script.get_current_head()
-    with database.engine.connect() as connection:
-        current = MigrationContext.configure(connection).get_current_revision()
+    current, expected = current_and_head(database)
     if current != expected:
         raise RuntimeError(
             "数据库结构未升级。请先运行 `uv run alembic upgrade head`, "
             f"当前版本为 {current or '未初始化'}, 目标版本为 {expected}。"
         )
-
-
-def _alembic_config():  # type: ignore[no-untyped-def]
-    from alembic.config import Config
-
-    return Config(PROJECT_ROOT / "alembic.ini")
 
 
 def _templates() -> Jinja2Templates:

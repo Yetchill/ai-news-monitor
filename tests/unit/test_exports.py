@@ -21,6 +21,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy import event, insert, select
 
 from app import cli
+from app.config import Settings
 from app.domain.enums import (
     Category,
     SourceAudience,
@@ -828,7 +829,11 @@ def test_cli_default_output_directory_and_temp_cleanup(
 
     monkeypatch.setattr(cli, "configure_logging", lambda: None)
     monkeypatch.setattr(cli.Database, "from_settings", classmethod(fake_from_settings))
-    monkeypatch.setattr(cli, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(
+        cli,
+        "get_settings",
+        lambda: Settings(data_dir=tmp_path, _env_file=None),  # pyright: ignore[reportCallIssue]
+    )
     assert cli.main(["export", "word"]) == 0
     outputs = list((tmp_path / "output").glob("*.docx"))
     assert len(outputs) == 1
@@ -883,7 +888,9 @@ def test_export_preserves_all_database_rows_and_file_hash(database: Database) ->
             return {
                 table.name: [
                     dict(row)
-                    for row in connection.execute(select(table).order_by(table.c.id)).mappings()
+                    for row in connection.execute(
+                        select(table).order_by(next(iter(table.primary_key.columns)))
+                    ).mappings()
                 ]
                 for table in Base.metadata.sorted_tables
             }

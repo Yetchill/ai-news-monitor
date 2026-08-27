@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "kind": "release-validation-schema-baseline",
+  "mode": "deterministic-offline",
+  "generated_report": "pytest tmp_path/release-validation.json; set AIM_RELEASE_VALIDATION_REPORT to an explicit CI artifact path to retain it",
+  "required_fields": [
+    "git.revision",
+    "git.version",
+    "duration_seconds",
+    "crawler.source_types",
+    "crawler.cycles",
+    "crawler.fault_cycles",
+    "crawler.failure_reasons",
+    "updates.runs",
+    "updates.new",
+    "updates.updated",
+    "updates.duplicate",
+    "source_counts",
+    "memory.rss_bytes.start",
+    "memory.rss_bytes.peak",
+    "memory.rss_bytes.end",
+    "runtime.threads",
+    "runtime.asyncio_tasks",
+    "runtime.background_tasks",
+    "runtime.database_checked_out"
+  ],
+  "fixtures": {
+    "rss": "tests/fixtures/sample_rss.xml",
+    "html": "tests/fixtures/sample_list.html",
+    "json": "tests/fixtures/qwen_blog.json",
+    "github_release": "tests/fixtures/github_releases.json",
+    "single_page_changelog": "tests/fixtures/deepseek_changelog.html"
+  },
+  "constraints": {
+    "cycles": 100,
+    "external_ai_tokens": 0,
+    "database_checked_out_end": 0
+  }
+}

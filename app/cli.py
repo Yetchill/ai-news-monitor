@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app.classifiers.rule_based import RuleBasedClassifier
 from app.collectors.registry import default_collector_registry
-from app.config.settings import PROJECT_ROOT
+from app.config.settings import get_settings
 from app.domain.enums import Category, CrawlStatus, RunTrigger, SourceScope
 from app.domain.exports import ExportFormat, ExportQuery
 from app.domain.queries import ItemFilter
@@ -32,6 +32,7 @@ from app.services.source_lifecycle_service import SourceLifecycleService
 from app.services.update_execution_service import UpdateExecutionService, UpdateLock
 from app.services.update_pipeline import UpdatePipeline
 from app.storage.database import Database
+from app.storage.migrations.runtime import ensure_database_current
 from app.storage.repositories import RepositoryUnitOfWork
 from app.utils.logging import configure_logging
 
@@ -43,6 +44,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         configure_logging()
         database = Database.from_settings()
+        if hasattr(database, "database_url") and hasattr(database, "engine"):
+            ensure_database_current(database)
         if arguments.command == "runs":
             _print_runs(database, arguments.limit)
             return 0
@@ -390,7 +393,7 @@ def _run_export(database: Database, arguments: argparse.Namespace) -> None:
             limit=arguments.limit,
         ),
     )
-    output = arguments.output or (PROJECT_ROOT / "output" / result.filename)
+    output = arguments.output or (get_settings().output_dir / result.filename)
     expected_suffix = ".xlsx" if export_format is ExportFormat.EXCEL else ".docx"
     if output.suffix.lower() != expected_suffix:
         raise ValueError(f"output path must end with {expected_suffix}")

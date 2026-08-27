@@ -47,3 +47,7 @@ class HttpStatusFetchError(FetchError):
     def __init__(self, url: str, status_code: int) -> None:
         self.status_code = status_code
         super().__init__(url, f"HTTP {status_code} while fetching {url}")
+
+
+class ResponseTooLargeFetchError(FetchError):
+    """The response body exceeded the configured safety limit."""

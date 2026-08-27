@@ -26,9 +26,11 @@ from app.domain.update import UpdateResult
 from app.services import schedule_settings_service as schedule_module
 from app.services.crawl_run_service import CrawlRunService
 from app.services.schedule_settings_service import (
+    DEFAULT_INITIAL_FETCH_DAYS,
     ScheduleSettingsService,
     ScheduleValidationError,
     next_scheduled_run,
+    parse_initial_fetch_days,
     parse_time,
     parse_weekdays,
     system_timezone_name,
@@ -724,6 +726,7 @@ def test_web_settings_page_save_validation_and_immediate_display(database: Datab
                 "schedule_time": "09:00",
                 "days": "mon",
                 "timezone": "Invalid/Zone",
+                "initial_fetch_days": "30",
             },
         )
         assert invalid.status_code == 400
@@ -736,13 +739,64 @@ def test_web_settings_page_save_validation_and_immediate_display(database: Datab
                 "schedule_time": "09:30",
                 "days": ["mon", "fri"],
                 "timezone": "Asia/Shanghai",
+                "initial_fetch_days": "45",
             },
             follow_redirects=True,
         )
         assert saved.status_code == 200
         assert "设置已保存并立即生效" in saved.text
         assert "Asia/Shanghai" in saved.text
+        assert 'value="45"' in saved.text
         assert "下一次计划运行" in saved.text
+        assert application.state.services.schedule_settings.get().initial_fetch_days == 45
+
+
+def test_initial_fetch_days_defaults_persists_and_validates_web_input(
+    database: Database,
+) -> None:
+    service = _service(database)
+    assert service.get().initial_fetch_days == DEFAULT_INITIAL_FETCH_DAYS
+    assert parse_initial_fetch_days("1") == 1
+    assert parse_initial_fetch_days("365") == 365
+
+    application = create_app(database=database, enforce_migrations=False)
+    valid_data = {
+        "schedule_time": "09:00",
+        "days": "mon",
+        "timezone": "UTC",
+    }
+    with TestClient(application, raise_server_exceptions=False) as client:
+        page = client.get("/settings")
+        assert 'type="number"' in page.text
+        assert 'name="initial_fetch_days"' in page.text
+        assert 'min="1"' in page.text
+        assert 'max="365"' in page.text
+        assert 'step="1"' in page.text
+        assert "仅在某个来源第一次成功抓取时使用" in page.text
+
+        first = client.post(
+            "/settings",
+            data={**valid_data, "initial_fetch_days": "1"},
+            follow_redirects=True,
+        )
+        assert first.status_code == 200
+        assert _service(database).get().initial_fetch_days == 1
+
+        upper = client.post(
+            "/settings",
+            data={**valid_data, "initial_fetch_days": "365"},
+            follow_redirects=True,
+        )
+        assert upper.status_code == 200
+        assert _service(database).get().initial_fetch_days == 365
+
+        for invalid_value in ("0", "-1", "366", "1.5", "", "abc"):
+            rejected = client.post(
+                "/settings",
+                data={**valid_data, "initial_fetch_days": invalid_value},
+            )
+            assert rejected.status_code == 400, invalid_value
+            assert _service(database).get().initial_fetch_days == 365
 
 
 def test_web_settings_page_recovers_from_deleted_or_invalid_persisted_timezone(
@@ -772,6 +826,7 @@ def test_web_settings_page_recovers_from_deleted_or_invalid_persisted_timezone(
                 "schedule_time": "09:00",
                 "days": "mon",
                 "timezone": "UTC",
+                "initial_fetch_days": "30",
             },
             follow_redirects=True,
         )
@@ -799,6 +854,7 @@ def test_web_reports_committed_settings_when_scheduler_reload_fails_and_can_reco
                 "schedule_time": "07:45",
                 "days": ["tue", "thu"],
                 "timezone": "Asia/Shanghai",
+                "initial_fetch_days": "30",
             },
         )
         assert failed.status_code == 503
@@ -814,6 +870,7 @@ def test_web_reports_committed_settings_when_scheduler_reload_fails_and_can_reco
                 "schedule_time": "07:45",
                 "days": ["tue", "thu"],
                 "timezone": "Asia/Shanghai",
+                "initial_fetch_days": "30",
             },
             follow_redirects=True,
         )
@@ -845,6 +902,7 @@ def test_web_does_not_reload_scheduler_when_settings_save_fails(
                 "schedule_time": "09:00",
                 "days": "mon",
                 "timezone": "UTC",
+                "initial_fetch_days": "30",
             },
         )
 

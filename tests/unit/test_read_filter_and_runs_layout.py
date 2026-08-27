@@ -8,11 +8,19 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
 
 from app.config.settings import PROJECT_ROOT
-from app.domain.enums import Category, SourceOrigin, SourceScope, SourceType
-from app.domain.models import IntelligenceItem, Source
+from app.domain.enums import (
+    Category,
+    CrawlStatus,
+    RunTrigger,
+    SourceOrigin,
+    SourceScope,
+    SourceType,
+)
+from app.domain.models import CrawlRun, CrawlSourceExecution, IntelligenceItem, Source
 from app.domain.queries import ItemQuery
 from app.storage.database import Database
 from app.storage.repositories import RepositoryUnitOfWork
@@ -235,3 +243,95 @@ def test_runs_filter_has_explicit_six_three_one_column_css() -> None:
     assert "justify-self: end;" in css
     assert "min-width: 0;" in css
     assert Path(PROJECT_ROOT / "app/web/templates/runs.html").is_file()
+
+
+def test_expanded_run_details_keep_sources_reasons_and_summary_in_scoped_regions(
+    read_client: TestClient,
+    database: Database,
+) -> None:
+    now = datetime(2026, 7, 23, 4, 0, tzinfo=UTC)
+    long_rule = "规则-" + "超长规则名称" * 30
+    long_error = "https://errors.example/" + "very-long-segment-" * 40
+    with RepositoryUnitOfWork(database) as uow:
+        run = uow.crawl_runs.add(
+            CrawlRun(
+                started_at=now,
+                finished_at=now + timedelta(seconds=8),
+                status=CrawlStatus.PARTIAL_SUCCESS,
+                trigger=RunTrigger.MANUAL_WEB,
+                source_total=18,
+                source_success=17,
+                source_failed=1,
+                rejection_reason_counts={long_rule: 7, "quality.below_minimum": 3},
+                failure_reason_counts={"parse_or_collection.failed": 2, long_error: 1},
+                error_summary=long_error,
+            )
+        )
+        for index in range(18):
+            source = uow.sources.add(
+                Source(
+                    name=f"来源-{index}-" + "超长来源名称" * 12,
+                    source_type=SourceType.RSS,
+                    start_url=f"https://source-{index}.example/" + "path-" * 30,
+                    collector_name="rss",
+                    collector_config={},
+                    origin=SourceOrigin.PRESET,
+                )
+            )
+            uow.crawl_source_executions.add(
+                CrawlSourceExecution(
+                    crawl_run_id=run.id,
+                    source_id=source.id,
+                    status="failed" if index == 17 else "success",
+                    discovered_count=3,
+                    accepted_count=2,
+                    rejected_count=1,
+                    new_count=1,
+                    error=long_error if index == 17 else None,
+                )
+            )
+        empty_run = uow.crawl_runs.add(
+            CrawlRun(
+                started_at=now - timedelta(hours=1),
+                finished_at=now - timedelta(hours=1) + timedelta(seconds=2),
+                status=CrawlStatus.SUCCESS,
+                trigger=RunTrigger.SCHEDULED,
+                source_total=0,
+                source_success=0,
+                source_failed=0,
+            )
+        )
+
+    response = read_client.get("/runs")
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.text, "html.parser")
+    detail = soup.select_one(f"#run-{run.id} + tr.tr-expand")
+    assert detail is not None
+    grid = detail.select_one(".expand-grid")
+    assert grid is not None
+    assert len(grid.select(":scope > .expand-main")) == 1
+    assert len(grid.select(":scope > .expand-summary")) == 1
+    assert len(grid.select(".expand-reasons > .expand-block")) == 2
+    assert len(grid.select(".mini-table-scroll .mini-table tbody tr")) == 18
+    assert long_rule in detail.get_text()
+    assert long_error in detail.get_text()
+
+    empty_detail = soup.select_one(f"#run-{empty_run.id} + tr.tr-expand")
+    assert empty_detail is not None
+    assert "本次没有未通过准入的原因" in empty_detail.get_text()
+    assert "本次没有处理失败原因" in empty_detail.get_text()
+
+
+def test_expanded_run_css_contains_overflow_and_responsive_guards() -> None:
+    css = (PROJECT_ROOT / "app/web/static/styles.css").read_text(encoding="utf-8")
+
+    assert "grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);" in css
+    assert ".expand-main,\n.expand-block,\n.expand-summary {\n  min-width: 0;" in css
+    assert ".mini-table-scroll" in css
+    assert "overflow-x: auto;" in css
+    assert "overflow-wrap: anywhere;" in css
+    assert "word-break: break-word;" in css
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr));" in css
+    small = css.split("@media (max-width: 768px)", 1)[1]
+    assert ".expand-reasons" in small
+    assert "grid-template-columns: minmax(0, 1fr);" in small

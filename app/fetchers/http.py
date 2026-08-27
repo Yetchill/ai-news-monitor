@@ -1,6 +1,7 @@
 """Polite asynchronous HTTP fetcher with bounded retries."""
 
 import asyncio
+import logging
 from collections.abc import Mapping
 from time import monotonic
 from urllib.parse import urlsplit
@@ -17,6 +18,7 @@ from app.fetchers.errors import (
     NetworkFetchError,
     NotFoundFetchError,
     RateLimitFetchError,
+    ResponseTooLargeFetchError,
     RetryableFetchError,
     ServerFetchError,
 )
@@ -24,6 +26,8 @@ from app.fetchers.errors import (
 DEFAULT_USER_AGENT = (
     "AIIntelligenceMonitor/0.2 (+local research aggregator; respectful automated client)"
 )
+DEFAULT_MAX_RESPONSE_BYTES = 20 * 1024 * 1024
+LOGGER = logging.getLogger("app.crawler")
 
 
 class HttpFetcher:
@@ -37,6 +41,7 @@ class HttpFetcher:
         max_retries: int = 2,
         per_domain_concurrency: int = 2,
         global_concurrency: int = 5,
+        max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
         user_agent: str = DEFAULT_USER_AGENT,
         client: httpx.AsyncClient | None = None,
     ) -> None:
@@ -50,12 +55,15 @@ class HttpFetcher:
             raise ValueError("per_domain_concurrency must be positive")
         if global_concurrency <= 0:
             raise ValueError("global_concurrency must be positive")
+        if max_response_bytes < 1024:
+            raise ValueError("max_response_bytes must be at least 1024")
 
         self._timeout = httpx.Timeout(timeout_seconds)
         self._request_interval = request_interval_seconds
         self._max_retries = max_retries
         self._per_domain_concurrency = per_domain_concurrency
         self._user_agent = user_agent
+        self._max_response_bytes = max_response_bytes
         self._client = client or httpx.AsyncClient(
             timeout=self._timeout,
             follow_redirects=True,
@@ -162,11 +170,10 @@ class HttpFetcher:
         if headers:
             request_headers.update(headers)
         try:
-            response = await self._client.get(
+            response, content = await self._send_bounded(
+                "GET",
                 url,
                 headers=request_headers,
-                timeout=self._timeout,
-                follow_redirects=True,
             )
         except httpx.TimeoutException as error:
             raise FetchTimeoutError(url, f"Timeout while fetching {url}") from error
@@ -176,7 +183,7 @@ class HttpFetcher:
         status = response.status_code
         response_url = str(response.url)
         if status == 403:
-            if _is_rate_limit_response(response):
+            if _is_rate_limit_response(response, content):
                 raise RateLimitFetchError(
                     response_url,
                     f"Rate limit exhausted while fetching {response_url}",
@@ -202,7 +209,7 @@ class HttpFetcher:
             url=response_url,
             status_code=status,
             headers=dict(response.headers.items()),
-            content=response.content,
+            content=content,
             encoding=response.encoding or "utf-8",
         )
 
@@ -217,12 +224,11 @@ class HttpFetcher:
         if headers:
             request_headers.update(headers)
         try:
-            response = await self._client.post(
+            response, content = await self._send_bounded(
+                "POST",
                 url,
-                content=body,
+                body=body,
                 headers=request_headers,
-                timeout=self._timeout,
-                follow_redirects=True,
             )
         except httpx.TimeoutException as error:
             raise FetchTimeoutError(url, f"Timeout while posting to {url}") from error
@@ -233,7 +239,7 @@ class HttpFetcher:
         status = response.status_code
         response_url = str(response.url)
         if status == 403:
-            if _is_rate_limit_response(response):
+            if _is_rate_limit_response(response, content):
                 raise RateLimitFetchError(
                     response_url,
                     f"Rate limit exhausted while posting to {response_url}",
@@ -259,12 +265,58 @@ class HttpFetcher:
             url=response_url,
             status_code=status,
             headers=dict(response.headers.items()),
-            content=response.content,
+            content=content,
             encoding=response.encoding or "utf-8",
         )
 
+    async def _send_bounded(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: Mapping[str, str],
+        body: str | None = None,
+    ) -> tuple[httpx.Response, bytes]:
+        request = self._client.build_request(
+            method,
+            url,
+            headers=headers,
+            content=body,
+            timeout=self._timeout,
+        )
+        response = await self._client.send(request, stream=True, follow_redirects=True)
+        try:
+            declared = response.headers.get("content-length")
+            if declared and declared.isdecimal() and int(declared) > self._max_response_bytes:
+                LOGGER.warning(
+                    "Response too large for %s: declared=%s limit=%s",
+                    response.url,
+                    declared,
+                    self._max_response_bytes,
+                )
+                raise ResponseTooLargeFetchError(
+                    str(response.url), "Response exceeded the configured size limit"
+                )
+            chunks: list[bytes] = []
+            total = 0
+            async for chunk in response.aiter_bytes():
+                total += len(chunk)
+                if total > self._max_response_bytes:
+                    LOGGER.warning(
+                        "Response too large for %s: streamed>%s",
+                        response.url,
+                        self._max_response_bytes,
+                    )
+                    raise ResponseTooLargeFetchError(
+                        str(response.url), "Response exceeded the configured size limit"
+                    )
+                chunks.append(chunk)
+            return response, b"".join(chunks)
+        finally:
+            await response.aclose()
 
-def _is_rate_limit_response(response: httpx.Response) -> bool:
+
+def _is_rate_limit_response(response: httpx.Response, content: bytes = b"") -> bool:
     """Distinguish retryable HTTP 403 rate limits from ordinary access denials."""
 
     if response.headers.get("x-ratelimit-remaining") == "0":
@@ -274,7 +326,7 @@ def _is_rate_limit_response(response: httpx.Response) -> bool:
     hostname = (response.url.host or "").lower()
     if hostname != "api.github.com":
         return False
-    message = response.text[:2000].casefold()
+    message = content[:2000].decode(response.encoding or "utf-8", errors="replace").casefold()
     return "rate limit" in message or "secondary rate" in message
 
 
@@ -287,5 +339,6 @@ __all__ = [
     "NetworkFetchError",
     "NotFoundFetchError",
     "RateLimitFetchError",
+    "ResponseTooLargeFetchError",
     "ServerFetchError",
 ]

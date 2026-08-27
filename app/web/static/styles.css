@@ -1164,6 +1164,26 @@ select {
   gap: var(--sp-4);
 }
 
+.inline-number-setting {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.inline-number-setting input[type="number"] {
+  width: 92px;
+  flex: none;
+}
+
+.field-help {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: var(--fs-tiny);
+  line-height: 1.6;
+}
+
 .form-actions {
   display: flex;
   align-items: center;
@@ -1343,6 +1363,56 @@ select {
 
 .ai-col {
   min-width: 0;
+}
+
+.ai-progress {
+  margin-bottom: var(--sp-4);
+}
+
+.ai-progress-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hover-bg);
+  margin: 0 0 var(--sp-4);
+}
+
+.ai-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 180ms ease;
+}
+
+.ai-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+}
+
+.ai-progress-grid dt {
+  color: var(--text-3);
+  font-size: var(--fs-tiny);
+}
+
+.ai-progress-grid dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.notice.is-loading {
+  border-left-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  white-space: pre-line;
+}
+
+#ai-test-result {
+  white-space: pre-line;
 }
 
 .settings-layout {
@@ -1547,8 +1617,35 @@ select {
 /* 展开详情内部布局 */
 .expand-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
   gap: var(--sp-4);
+  align-items: start;
+  min-width: 0;
+}
+
+.expand-main,
+.expand-block,
+.expand-summary {
+  min-width: 0;
+}
+
+.expand-main {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.expand-reasons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.expand-reasons .expand-block,
+.expand-summary {
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
 }
 
 .expand-block h3 {
@@ -1560,12 +1657,30 @@ select {
 
 .mini-table {
   width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--fs-small);
   background: var(--surface);
+}
+
+.mini-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
-  overflow: hidden;
+  background: var(--surface);
+}
+
+.mini-table th:first-child,
+.mini-table td:first-child {
+  width: 24%;
+}
+
+.mini-table th:last-child,
+.mini-table td:last-child {
+  width: 28%;
 }
 
 .mini-table th {
@@ -1582,7 +1697,9 @@ select {
 .mini-table td {
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mini-table tr:last-child td {
@@ -1598,8 +1715,8 @@ select {
 }
 
 .reason-list li {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--sp-3);
   padding: 3px 0;
   border-bottom: 1px dashed var(--border);
@@ -1609,9 +1726,16 @@ select {
   border-bottom: none;
 }
 
+.reason-list li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .reason-list b {
   font-variant-numeric: tabular-nums;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .error-box {
@@ -1622,7 +1746,12 @@ select {
   border-radius: var(--radius-control);
   padding: var(--sp-2) var(--sp-3);
   line-height: 1.6;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.expand-error-title {
+  margin-top: var(--sp-3);
 }
 
 /* 错误入口小按钮 */
@@ -1973,6 +2102,10 @@ textarea:focus {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .ai-progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .data-table.table-cards > thead {
     display: none;
   }
@@ -2099,6 +2232,10 @@ textarea:focus {
 }
 
 @media (max-width: 768px) {
+  .expand-reasons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .filter-main.runs-filter-grid {
     grid-template-columns: minmax(0, 1fr);
   }

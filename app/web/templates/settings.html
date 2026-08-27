@@ -35,6 +35,15 @@
             <input type="text" id="setting-tz" name="timezone" value="{{ view.settings.timezone }}" maxlength="100" required placeholder="Asia/Shanghai">
           </div>
           <div class="field form-grid-wide">
+            <label for="setting-initial-fetch-days">首次抓取时间范围</label>
+            <div class="inline-number-setting">
+              <span>首次抓取最近</span>
+              <input type="number" id="setting-initial-fetch-days" name="initial_fetch_days" value="{{ view.settings.initial_fetch_days }}" min="1" max="365" step="1" required inputmode="numeric">
+              <span>天内的资讯</span>
+            </div>
+            <small class="field-help">仅在某个来源第一次成功抓取时使用；后续更新仍按增量方式运行。</small>
+          </div>
+          <div class="field form-grid-wide">
             <label>执行星期</label>
             <div class="weekday-chips" id="weekday-chips">
               {% for day in weekdays %}

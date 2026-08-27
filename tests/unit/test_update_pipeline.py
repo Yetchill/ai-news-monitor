@@ -18,6 +18,7 @@ from app.services.classification_service import ClassificationService
 from app.services.crawl_run_service import CrawlRunService
 from app.services.crawl_service import CrawlService
 from app.services.item_persistence_service import ItemPersistenceService
+from app.services.schedule_settings_service import ScheduleSettingsService
 from app.services.update_pipeline import SourceDisabledError, SourceNotFoundError, UpdatePipeline
 from app.storage.database import Database
 from app.storage.repositories import RepositoryUnitOfWork
@@ -146,6 +147,8 @@ def _pipeline(
     *,
     crawl_run_service: CrawlRunService | None = None,
     uow_factory: Callable[[], RepositoryUnitOfWork] | None = None,
+    initial_fetch_days_provider: Callable[[], int] | None = None,
+    now: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> UpdatePipeline:
     resolved_uow_factory = uow_factory
     if resolved_uow_factory is None:
@@ -164,6 +167,8 @@ def _pipeline(
         classification_service=classification,
         persistence_service=ItemPersistenceService(resolved_uow_factory),
         crawl_run_service=crawl_run_service,
+        initial_fetch_days_provider=initial_fetch_days_provider,
+        now=now,
     )
 
 
@@ -206,6 +211,198 @@ async def test_first_run_persists_classification_and_second_run_is_skipped(
     assert stored_source.last_checked_at is not None
     assert stored_source.last_success_at is not None
     assert stored_source.last_error is None
+
+
+@pytest.mark.asyncio
+async def test_initial_fetch_range_is_inclusive_audited_and_only_applied_until_success(
+    database: Database,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime(2026, 7, 23, 8, 0, tzinfo=UTC)
+    cutoff = now - timedelta(days=30)
+    source = _source("首次来源", "https://example.com/initial")
+    source.lookback_days = 0
+    _add_sources(database, source)
+    backend = ScenarioFetcher()
+    backend.responses[source.start_url] = [
+        [
+            _item(
+                "https://example.com/boundary",
+                title="边界时间资讯",
+                published_at=cutoff,
+            ),
+            _item(
+                "https://example.com/too-old",
+                title="超出范围资讯",
+                published_at=cutoff - timedelta(microseconds=1),
+            ),
+            _item(
+                "https://example.com/unknown-date",
+                title="未知发布时间资讯",
+                published_at=None,
+            ),
+        ],
+        [
+            _item(
+                "https://example.com/later-old",
+                title="后续增量旧资讯",
+                published_at=now - timedelta(days=300),
+            )
+        ],
+    ]
+    pipeline = _pipeline(database, backend, now=lambda: now)
+    log_calls: list[tuple[object, ...]] = []
+
+    def record_info(_message: str, *args: object) -> None:
+        log_calls.append(args)
+
+    monkeypatch.setattr("app.services.update_pipeline.LOGGER.info", record_info)
+
+    first = await pipeline.update()
+    second = await pipeline.update()
+
+    assert (first.discovered_count, first.new_count, first.skipped_count) == (3, 2, 1)
+    assert first.failed_count == 0
+    assert first.failure_reason_counts == {}
+    assert first.source_results[0].skipped == 1
+    assert any(args[1] == "initial_fetch.outside_time_range" and args[2] == 1 for args in log_calls)
+    assert backend.contexts[0].config["published_from"] == cutoff.isoformat()
+    assert "published_from" not in backend.contexts[1].config
+    assert second.new_count == 1
+
+    with RepositoryUnitOfWork(database) as uow:
+        stored = {item.canonical_url: item for item in uow.items.list()}
+        stored_source = uow.sources.get(source.id)
+    assert "https://example.com/boundary" in stored
+    assert stored["https://example.com/unknown-date"].published_at is None
+    assert "https://example.com/too-old" not in stored
+    assert "https://example.com/later-old" in stored
+    assert stored_source is not None and stored_source.last_success_at is not None
+
+
+@pytest.mark.asyncio
+async def test_failed_initial_fetch_retries_with_same_range_and_new_sources_are_independent(
+    database: Database,
+) -> None:
+    now = datetime(2026, 7, 23, 8, 0, tzinfo=UTC)
+    cutoff = now - timedelta(days=7)
+    failing = _source("失败后重试", "https://example.com/retry")
+    later = _source("后续新增", "https://example.com/later")
+    failing.lookback_days = 0
+    later.lookback_days = 0
+    _add_sources(database, failing)
+    backend = ScenarioFetcher()
+    backend.responses[failing.start_url] = [
+        NetworkFetchError(failing.start_url, "network unavailable"),
+        [_item("https://example.com/recovered", published_at=cutoff)],
+    ]
+    backend.responses[later.start_url] = [
+        [_item("https://example.com/later-old", published_at=cutoff - timedelta(seconds=1))]
+    ]
+    pipeline = _pipeline(
+        database,
+        backend,
+        initial_fetch_days_provider=lambda: 7,
+        now=lambda: now,
+    )
+
+    first = await pipeline.update(source_id=failing.id)
+    with RepositoryUnitOfWork(database) as uow:
+        after_failure = uow.sources.get(failing.id)
+    assert first.status is CrawlStatus.FAILED
+    assert after_failure is not None and after_failure.last_success_at is None
+
+    retry = await pipeline.update(source_id=failing.id)
+    assert retry.new_count == 1
+    assert backend.contexts[0].config["published_from"] == cutoff.isoformat()
+    assert backend.contexts[1].config["published_from"] == cutoff.isoformat()
+
+    _add_sources(database, later)
+    added_later = await pipeline.update(source_id=later.id)
+    assert (added_later.new_count, added_later.skipped_count) == (0, 1)
+    assert backend.contexts[2].config["published_from"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_saved_initial_fetch_range_takes_effect_for_the_next_new_source(
+    database: Database,
+) -> None:
+    now = datetime(2026, 7, 23, 8, 0, tzinfo=UTC)
+
+    def uow_factory() -> RepositoryUnitOfWork:
+        return RepositoryUnitOfWork(database)
+
+    settings = ScheduleSettingsService(uow_factory, now=lambda: now)
+    settings.save(
+        enabled=False,
+        hour=9,
+        minute=0,
+        days=("mon",),
+        timezone="UTC",
+        initial_fetch_days=5,
+    )
+    first = _source("五天范围", "https://example.com/five-days")
+    second = _source("二十天范围", "https://example.com/twenty-days")
+    _add_sources(database, first)
+    backend = ScenarioFetcher()
+    ten_days_old = now - timedelta(days=10)
+    backend.responses[first.start_url] = [
+        [_item("https://example.com/first-old", published_at=ten_days_old)]
+    ]
+    backend.responses[second.start_url] = [
+        [_item("https://example.com/second-old", published_at=ten_days_old)]
+    ]
+    pipeline = _pipeline(
+        database,
+        backend,
+        initial_fetch_days_provider=lambda: settings.get().initial_fetch_days,
+        now=lambda: now,
+    )
+
+    before_change = await pipeline.update(source_id=first.id)
+    assert (before_change.new_count, before_change.skipped_count) == (0, 1)
+    with RepositoryUnitOfWork(database) as uow:
+        stored_first = uow.sources.get(first.id)
+    assert stored_first is not None and stored_first.last_success_at is not None
+
+    settings.save(
+        enabled=False,
+        hour=9,
+        minute=0,
+        days=("mon",),
+        timezone="UTC",
+        initial_fetch_days=20,
+    )
+    assert ScheduleSettingsService(uow_factory).get().initial_fetch_days == 20
+    _add_sources(database, second)
+    after_change = await pipeline.update(source_id=second.id)
+    assert (after_change.new_count, after_change.skipped_count) == (1, 0)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "trigger",
+    (RunTrigger.MANUAL_WEB, RunTrigger.MANUAL_CLI, RunTrigger.SCHEDULED),
+)
+async def test_initial_fetch_range_is_shared_by_every_update_trigger(
+    database: Database,
+    trigger: RunTrigger,
+) -> None:
+    now = datetime(2026, 7, 23, 8, 0, tzinfo=UTC)
+    source = _source(trigger.value, f"https://example.com/{trigger.value}")
+    _add_sources(database, source)
+    backend = ScenarioFetcher()
+    backend.responses[source.start_url] = [[]]
+
+    result = await _pipeline(
+        database,
+        backend,
+        initial_fetch_days_provider=lambda: 12,
+        now=lambda: now,
+    ).update(source_id=source.id, trigger=trigger)
+
+    assert result.trigger is trigger
+    assert backend.contexts[0].config["published_from"] == (now - timedelta(days=12)).isoformat()
 
 
 @pytest.mark.asyncio
@@ -330,7 +527,7 @@ async def test_content_change_creates_revision_with_only_changed_fields(
 ) -> None:
     source = _source("Feed", "https://example.com/feed")
     _add_sources(database, source)
-    published = datetime(2026, 7, 1, tzinfo=UTC)
+    published = datetime.now(UTC) - timedelta(days=2)
     backend = ScenarioFetcher()
     backend.responses[source.start_url] = [
         [_item("https://example.com/1", published_at=published, extra={"attachment": "a.pdf"})],
@@ -338,7 +535,7 @@ async def test_content_change_creates_revision_with_only_changed_fields(
             _item(
                 "https://example.com/1",
                 summary="更新后的申报材料说明",
-                published_at=datetime(2026, 7, 2),
+                published_at=(published + timedelta(days=1)).replace(tzinfo=None),
                 extra={"attachment": "b.pdf"},
             )
         ],
@@ -914,6 +1111,7 @@ async def test_changed_url_and_changed_short_title_are_not_fuzzily_merged(
 @pytest.mark.asyncio
 async def test_history_mode_options_reach_collector_config(database: Database) -> None:
     source = _source("Feed", "https://example.com/feed")
+    source.last_success_at = datetime(2024, 1, 1, tzinfo=UTC)
     _add_sources(database, source)
     backend = ScenarioFetcher()
     backend.responses[source.start_url] = [[]]
